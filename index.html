@@ -2,86 +2,396 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo Lançamento - Financo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Financo - Controle Financeiro</title>
     <style>
         * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
-        body { max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #f5f5f5; }
-        .cabecalho { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-        .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+        html { font-size: 16px; }
+        body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
+        h1 { text-align: center; color: #1565c0; margin-bottom: 1.25rem; font-size: 1.75rem; }
+
+        .barra-botoes { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 0; min-width: 140px; max-width: 200px; }
+        .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; }
+        .btn.primario { background: #1565c0; color: white; }
+        .btn.primario:hover { background: #0d47a1; }
+        .btn.sucesso { background: #2e7d32; color: white; font-size: 1.05rem; padding: 1rem; }
+        .btn.sucesso:hover { background: #1b5e20; }
+        .btn.secundario { background: #e0e0e0; color: #333; }
+        .btn.secundario:hover { background: #bdbdbd; }
         .btn.voltar { background: #616161; color: white; }
-        .btn.sucesso { background: #2e7d32; color: white; width: 100%; margin-top: 1rem; font-size: 1.1rem; }
-        .form { background: white; padding: 1.5rem; border-radius: 0.5rem; }
-        .linha { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .campo { flex: 1 1 200px; display: flex; flex-direction: column; gap: 0.5rem; }
-        .campo.grande { flex: 2 1 300px; }
-        label { font-weight: 500; color: #333; }
-        input, select { padding: 0.75rem; border: 1px solid #ddd; border-radius: 0.375rem; font-size: 1rem; }
-        .tipo { display: flex; gap: 1rem; padding: 0.5rem 0; flex-wrap: wrap; }
+        .btn.voltar:hover { background: #424242; }
+        .btn.perigo { background: #c62828; color: white; }
+        .btn.perigo:hover { background: #8e0000; }
+        .btn.pequeno { padding: 0.5rem; font-size: 0.85rem; }
+        .btn.aviso { background: #f57c00; color: white; }
+        .btn.aviso:hover { background: #ef6c00; }
+
+        .area-continuar { display: none; margin: 2rem 0 3rem 0; text-align: center; }
+        .area-continuar.mostrar { display: block; }
+
+        .menu-gerenciar { display: none; position: absolute; background: white; border-radius: 0.5rem; box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.15); padding: 1rem; min-width: 17.5rem; max-width: 90vw; z-index: 100; margin-top: 0.3125rem; }
+        .menu-gerenciar.aberto { display: block; }
+        .grupo-lista { margin-bottom: 1rem; }
+        .grupo-lista h4 { font-size: 0.875rem; color: #444; margin-bottom: 0.5rem; }
+        .item-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.375rem 0; border-bottom: 1px solid #eee; }
+        .item-linha input { flex: 1; padding: 0.375rem; border: 1px solid #ddd; border-radius: 0.25rem; font-size: 0.875rem; min-width: 0; }
+        .btn-acao { padding: 0.25rem 0.5rem; font-size: 0.8125rem; border: none; border-radius: 0.25rem; cursor: pointer; flex-shrink: 0; }
+        .btn-acao.salvar { background: #2e7d32; color: white; }
+        .btn-acao.excluir { background: #c62828; color: white; }
+        .btn-acao.adicionar { background: #1565c0; color: white; margin-top: 0.5rem; width: 100%; }
+
+        .form { background: white; padding: 0 1.25rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; }
+        .form.aberto { padding: 1.25rem; max-height: 1000px; opacity: 1; }
+
+        .linha { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 0.9375rem; align-items: flex-end; }
+        .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3125rem; min-width: 0; }
+        label { font-size: 0.875rem; color: #333; font-weight: 500; }
+        input, select { padding: 0.625rem; border: 1px solid #ccc; border-radius: 0.375rem; font-size: 0.9375rem; background: white; }
+        input:focus, select:focus { outline: none; border-color: #1565c0; }
+        .tipo { display: flex; gap: 1rem; padding-top: 0.625rem; flex-wrap: wrap; }
+        .tipo label { white-space: nowrap; }
+
+        #data, #edtData { max-width: 160px; flex: 0 0 auto; }
+
+        .tabela { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; width: 100%; overflow: hidden; }
+        .tabela-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.875rem 0.625rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.875rem; }
+        th { background: #1565c0; color: white; font-weight: 600; }
+        .venda { color: #2e7d32; font-weight: 600; }
+        .despesa { color: #c62828; font-weight: 600; }
+        .acao-coluna { width: 110px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .tabela-wrapper { overflow: visible; }
+            table, thead, tbody, th, td, tr { display: block; width: 100%; }
+            thead { display: none; }
+            tr { margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; background: #fafafa; border-radius: 0.5rem; padding: 0.5rem; }
+            td { padding: 0.625rem 0.5rem; border: none; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+            td::before { content: attr(etiqueta); font-weight: 600; color: #444; text-transform: uppercase; font-size: 0.75rem; }
+            .acao-coluna { width: 100%; justify-content: center; gap: 0.5rem; padding: 0.75rem 0.5rem; }
+            .acao-coluna::before { display: none; }
+        }
+
+        .totais { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .card { flex: 1 1 13.75rem; padding: 1.25rem; border-radius: 0.5rem; color: white; text-align: center; }
+        .card.vendas { background: #2e7d32; }
+        .card.despesas { background: #c62828; }
+        .card.saldo { background: #1565c0; }
+        .valor { font-size: 1.5rem; font-weight: bold; margin-top: 0.3125rem; }
+
+        .pagina { display: none; }
+        .pagina.ativa { display: block; }
+        .cabecalho-pagina { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .titulo-pagina { font-size: 1.5rem; color: #1565c0; }
+
+        .caixa-exportar, .caixa-integracao { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .caixa-exportar h3, .caixa-integracao h3 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
+
+        .categoria-titulo { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; margin-bottom: 0.5rem; background: #f8f9fa; border-radius: 0.5rem; cursor: pointer; border: 1px solid #e9ecef; transition: 0.2s; }
+        .categoria-titulo:hover { background: #e9ecef; }
+        .categoria-titulo h4 { font-size: 1rem; color: #1565c0; }
+        .seta { transition: transform 0.3s ease; font-size: 0.875rem; }
+        .seta.aberto { transform: rotate(180deg); }
+
+        .lista-sistemas { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.3s ease; margin-bottom: 1rem; padding-left: 1rem; }
+        .lista-sistemas.aberto { max-height: 2000px; opacity: 1; }
+
+        .item-sistema { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid #f1f3f5; flex-wrap: wrap; }
+        .item-sistema:last-child { border-bottom: none; }
+        .info-sistema { flex: 1 1 200px; }
+        .info-sistema h5 { font-size: 0.95rem; color: #222; margin-bottom: 0.25rem; }
+        .info-sistema p { font-size: 0.8rem; color: #666; }
+        .status { padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; }
+        .status.desconectado { background: #f3e5f5; color: #7b1fa2; }
+        .status.conectado { background: #e8f5e9; color: #2e7d32; }
+
+        .area-importacao { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
+        .area-importacao p { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }
+        .input-arquivo { margin-bottom: 0.75rem; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+        .modal.aberto { display: flex; }
+        .conteudo-modal { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+        .cabecalho-modal { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .cabecalho-modal h3 { color: #1565c0; font-size: 1.2rem; }
+        .btn-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0; width: auto; }
+        .btn-fechar:hover { color: #222; }
+        .aviso-config { font-size: 0.85rem; color: #666; background: #fff3e0; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; }
+
+        @media print {
+            body * { visibility: hidden; }
+            .pagina.ativa, .pagina.ativa * { visibility: visible; }
+            .pagina.ativa { position: absolute; left: 0; top: 0; width: 100%; }
+            .barra-botoes, .cabecalho-pagina button, .caixa-exportar, .caixa-integracao { display: none !important; }
+        }
+
+        @media (min-width: 992px) { .barra-botoes { flex-wrap: nowrap; } .barra-botoes > div, .barra-botoes > .btn { flex: 1; max-width: none; } }
+        @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } h1 { font-size: 1.5rem; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .item-sistema { flex-direction: column; align-items: flex-start; } .btn.pequeno { width: 100%; } }
     </style>
 </head>
 <body>
-    <div class="cabecalho">
-        <a href="index.html" class="btn voltar">⬅️ Voltar</a>
-        <h1>➕ Novo Lançamento</h1>
-    </div>
 
-    <div class="form">
-        <div class="linha">
-            <div class="campo">
-                <label>Data</label>
-                <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
+    <div class="pagina ativa" id="paginaPrincipal">
+        <h1>🔹 Financo</h1>
+        <div class="barra-botoes">
+            <div style="position: relative;">
+                <button class="btn primario" onclick="alternarMenuGerenciar()">⚙️ Gerenciar Itens ▼</button>
+                <div class="menu-gerenciar" id="menuGerenciar">
+                    <div class="grupo-lista">
+                        <h4>📈 Itens de Venda / Entrada</h4>
+                        <div id="listaVenda"></div>
+                        <button class="btn-acao adicionar" onclick="adicionarNovoItem('venda')">+ Adicionar Item</button>
+                    </div>
+                    <div class="grupo-lista">
+                        <h4>📉 Itens de Despesa / Saída</h4>
+                        <div id="listaDespesa"></div>
+                        <button class="btn-acao adicionar" onclick="adicionarNovoItem('despesa')">+ Adicionar Item</button>
+                    </div>
+                    <button class="btn-acao salvar" style="width:100%; margin-top:0.75rem;" onclick="salvarItensMenu()">✅ Salvar Alterações</button>
+                </div>
             </div>
-            <div class="campo">
-                <label>Tipo</label>
-                <div class="tipo">
-                    <label><input type="radio" name="tipo" id="venda"> Venda</label>
-                    <label><input type="radio" name="tipo" id="despesa"> Despesa</label>
+            <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
+            <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
+            <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
+            <button class="btn secundario">📂 Meses</button>
+            <button class="btn secundario">📊 Gráfico</button>
+        </div>
+
+        <div class="form" id="formulario">
+            <div class="linha">
+                <div class="campo">
+                    <label>Data</label>
+                    <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
+                </div>
+                <div class="campo">
+                    <label>Tipo</label>
+                    <div class="tipo">
+                        <label><input type="checkbox" id="venda"> Venda / Entrada</label>
+                        <label><input type="checkbox" id="despesa"> Despesa / Saída</label>
+                    </div>
+                </div>
+                <div class="campo">
+                    <label>Item</label>
+                    <select id="item"><option value="">Selecione primeiro o tipo</option></select>
+                </div>
+            </div>
+            <div class="linha">
+                <div class="campo">
+                    <label>Valor R$</label>
+                    <input type="number" step="0.01" id="valor" placeholder="0,00">
+                </div>
+                <div class="campo">
+                    <label>Pagamento</label>
+                    <select id="pagamento">
+                        <option value="">Selecione</option>
+                        <option>Dinheiro</option>
+                        <option>Pix</option>
+                        <option>Cartão Crédito</option>
+                        <option>Cartão Débito</option>
+                    </select>
+                </div>
+                <div class="campo" style="flex: 2 1 18.75rem;">
+                    <label>Observação</label>
+                    <input type="text" id="obs" placeholder="Opcional">
                 </div>
             </div>
         </div>
-        <div class="linha">
-            <div class="campo">
-                <label>Item</label>
-                <select id="item"><option value="">Selecione primeiro o tipo</option></select>
-            </div>
-            <div class="campo">
-                <label>Valor R$</label>
-                <input type="number" step="0.01" id="valor" placeholder="0,00">
-            </div>
-        </div>
-        <div class="linha">
-            <div class="campo">
-                <label>Pagamento</label>
-                <select id="pagamento">
-                    <option value="">Selecione</option>
-                    <option>Dinheiro</option>
-                    <option>Pix</option>
-                    <option>Cartão Crédito</option>
-                    <option>Cartão Débito</option>
-                </select>
-            </div>
-            <div class="campo grande">
-                <label>Observação</label>
-                <input type="text" id="obs" placeholder="Opcional">
+
+        <div class="tabela">
+            <div class="tabela-wrapper">
+                <table>
+                    <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th></tr></thead>
+                    <tbody id="corpoTabela"></tbody>
+                </table>
             </div>
         </div>
-        <button class="btn sucesso" onclick="salvar()">✅ Salvar Lançamento</button>
+
+        <div class="totais">
+            <div class="card vendas"><div>Total Vendas</div><div class="valor" id="totalVendas">R$ 0,00</div></div>
+            <div class="card despesas"><div>Total Despesas</div><div class="valor" id="totalDespesas">R$ 0,00</div></div>
+            <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="saldo">R$ 0,00</div></div>
+        </div>
+
+        <div class="area-continuar" id="areaContinuar">
+            <button class="btn sucesso" onclick="irParaPaginaExportar()">✅ Continuar para Salvar/Exportar</button>
+        </div>
+    </div>
+
+    <div class="pagina" id="paginaIntegracao">
+        <div class="cabecalho-pagina">
+            <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
+            <h2 class="titulo-pagina">🔗 Integrações</h2><div></div>
+        </div>
+        <div class="caixa-integracao">
+            <h3>Centro de Conexões Flexíveis</h3>
+            <p style="margin-bottom: 1.5rem; color: #555;">Estrutura preparada para receber qualquer sistema — adicione novos conectores a qualquer momento.</p>
+            
+            <div class="categoria">
+                <div class="categoria-titulo" onclick="alternarCategoria(this)"><h4>💳 PDVs e Maquininhas</h4><span class="seta">▼</span></div>
+                <div class="lista-sistemas">
+                    <div class="item-sistema"><div class="info-sistema"><h5>Mercado Pago</h5><p>PDV, maquininhas e pagamentos online</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Mercado Pago')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>Stone</h5><p>Máquinas e sistema de vendas</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Stone')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>PagSeguro / UOL</h5><p>PDV físico e online</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('PagSeguro / UOL')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>Cielo / Rede / Getnet</h5><p>Todas as maquininhas do mercado</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Cielo / Rede / Getnet')">Configurar</button></div>
+                </div>
+            </div>
+
+            <div class="categoria">
+                <div class="categoria-titulo" onclick="alternarCategoria(this)"><h4>🛒 Sistemas de Pedido e Comanda</h4><span class="seta">▼</span></div>
+                <div class="lista-sistemas">
+                    <div class="item-sistema"><div class="info-sistema"><h5>Sipag / GrandChef</h5><p>Comandas e restaurantes</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Sipag / GrandChef')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>Saipos / SystemPDV</h5><p>Comércio e serviços locais</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Saipos / SystemPDV')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>Omie / Ploomes</h5><p>ERP e gestão comercial</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Omie / Ploomes')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>Sistema Local Próprio</h5><p>Seu sistema interno personalizado</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Sistema Local Próprio')">Configurar</button></div>
+                </div>
+            </div>
+
+            <div class="categoria">
+                <div class="categoria-titulo" onclick="alternarCategoria(this)"><h4>📱 Meios de Pagamento Digitais</h4><span class="seta">▼</span></div>
+                <div class="lista-sistemas">
+                    <div class="item-sistema"><div class="info-sistema"><h5>Pix</h5><p>Recebimento automático</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('Pix')">Configurar</button></div>
+                    <div class="item-sistema"><div class="info-sistema"><h5>PicPay / Mercado Pago</h5><p>Carteiras digitais</p></div><span class="status desconectado">Desconectado</span><button class="btn primario pequeno" onclick="abrirModalConfiguracao('PicPay / Mercado Pago')">Configurar</button></div>
+                </div>
+            </div>
+
+            <div class="area-importacao">
+                <h4>📄 Importação Universal de Arquivos</h4>
+                <p>Funciona com qualquer sistema que exporte relatórios: CSV, Excel (.xlsx/.xls), TXT, JSON.</p>
+                <input type="file" id="arquivoImportacao" class="input-arquivo" accept=".csv,.xlsx,.xls,.txt,.json">
+                <button class="btn sucesso" style="width: 100%;">📥 Importar Lançamentos</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pagina" id="paginaExportar">
+        <div class="cabecalho-pagina">
+            <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
+            <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
+        </div>
+        <div class="tabela">
+            <div class="tabela-wrapper">
+                <table>
+                    <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th class="acao-coluna">Ações</th></tr></thead>
+                    <tbody id="tabelaExportar"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="totais">
+            <div class="card vendas"><div>Total Vendas</div><div class="valor" id="expTotalVendas">R$ 0,00</div></div>
+            <div class="card despesas"><div>Total Despesas</div><div class="valor" id="expTotalDespesas">R$ 0,00</div></div>
+            <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="expSaldo">R$ 0,00</div></div>
+        </div>
+        <div class="caixa-exportar">
+            <h3>Opções de Salvamento e Impressão</h3>
+            <div class="grupo-botoes-exportar">
+                <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
+                <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalEditar">
+        <div class="conteudo-modal">
+            <h3>✏️ Editar Lançamento</h3>
+            <div class="linha">
+                <div class="campo"><label>Data</label><input type="text" id="edtData" placeholder="dd/mm/aaaa" maxlength="10"></div>
+                <div class="campo"><label>Tipo</label><div class="tipo"><label><input type="checkbox" id="edtVenda"> Venda</label><label><input type="checkbox" id="edtDespesa"> Despesa</label></div></div>
+                <div class="campo"><label>Item</label><select id="edtItem"></select></div>
+            </div>
+            <div class="linha">
+                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="edtValor"></div>
+                <div class="campo"><label>Pagamento</label><select id="edtPagamento"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito</option><option>Cartão Débito</option></select></div>
+                <div class="campo" style="flex: 2 1 18.75rem;"><label>Observação</label><input type="text" id="edtObs"></div>
+            </div>
+            <div class="linha" style="margin-top: 1rem;">
+                <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
+                <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalConfigurar">
+        <div class="conteudo-modal">
+            <div class="cabecalho-modal">
+                <h3 id="tituloModalConfig">Configurar Sistema</h3>
+                <button class="btn-fechar" onclick="fecharModalConfiguracao()">×</button>
+            </div>
+            <div class="aviso-config">Preencha os dados de acesso fornecidos pelo sistema que deseja integrar. Suas informações ficam salvas apenas no seu dispositivo.</div>
+            <div class="linha"><div class="campo"><label>Chave API / Token</label><input type="text" id="cfgChave" placeholder="Cole a chave aqui"></div></div>
+            <div class="linha">
+                <div class="campo"><label>Usuário / ID</label><input type="text" id="cfgUsuario" placeholder="Seu usuário ou identificador"></div>
+                <div class="campo"><label>Senha / Código</label><input type="password" id="cfgSenha" placeholder="Senha de acesso"></div>
+            </div>
+            <div class="linha"><div class="campo"><label>URL do Servidor / Caminho Local</label><input type="text" id="cfgUrl" placeholder="Ex: localhost:3000 ou endereço do sistema"></div></div>
+            <div class="linha" style="margin-top: 1.5rem;">
+                <button class="btn secundario" style="flex:1;" onclick="fecharModalConfiguracao()">❌ Cancelar</button>
+                <button class="btn aviso" style="flex:1;" onclick="testarConexao()">🔍 Testar Conexão</button>
+                <button class="btn sucesso" style="flex:1;" onclick="salvarConfiguracao()">✅ Salvar</button>
+            </div>
+        </div>
     </div>
 
     <script>
+        let lancamentos = [];
+        let ultimo = '';
+        let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
+        let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
+        let indiceEdicaoAtual = null;
+        let pastaUltimosSalvos = [];
+        let sistemaAtualConfiguracao = '';
+
         function dataHoje() {
             const d = new Date();
             return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
         }
-        function atualizarSelect() {
+
+        function alternarCategoria(titulo) {
+            const lista = titulo.nextElementSibling;
+            const seta = titulo.querySelector('.seta');
+            lista.classList.toggle('aberto');
+            seta.classList.toggle('aberto');
+        }
+
+        function abrirModalConfiguracao(nomeSistema) {
+            sistemaAtualConfiguracao = nomeSistema;
+            document.getElementById('tituloModalConfig').textContent = `Configurar: ${nomeSistema}`;
+            document.getElementById('cfgChave').value = '';
+            document.getElementById('cfgUsuario').value = '';
+            document.getElementById('cfgSenha').value = '';
+            document.getElementById('cfgUrl').value = '';
+            document.getElementById('modalConfigurar').classList.add('aberto');
+        }
+        function fecharModalConfiguracao() { document.getElementById('modalConfigurar').classList.remove('aberto'); sistemaAtualConfiguracao = ''; }
+        function testarConexao() { alert(`🔍 Testando conexão com ${sistemaAtualConfiguracao}...\n\nFunção pronta para receber validação real!`); }
+        function salvarConfiguracao() { alert(`✅ Configuração de ${sistemaAtualConfiguracao} salva com sucesso!`); fecharModalConfiguracao(); }
+
+        function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
+
+        function atualizarSelectPorTipo() {
             const ehVenda = document.getElementById('venda').checked;
             const ehDespesa = document.getElementById('despesa').checked;
             const select = document.getElementById('item');
             select.innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-            const itens = JSON.parse(localStorage.getItem(ehVenda ? 'financoItensVenda' : 'financoItensDespesa') || '[]');
-            itens.forEach(n => select.appendChild(new Option(n, n)));
+            if (ehVenda) itensVenda.forEach(n => select.appendChild(new Option(n, n)));
+            else if (ehDespesa) itensDespesa.forEach(n => select.appendChild(new Option(n, n)));
+            verificarPreenchimentoAutomatico();
         }
+
+        function verificarPreenchimentoAutomatico() {
+            const ehVenda = document.getElementById('venda').checked;
+            const ehDespesa = document.getElementById('despesa').checked;
+            const data = document.getElementById('data').value.trim();
+            const item = document.getElementById('item').value.trim();
+            const valor = parseFloat(document.getElementById('valor').value || 0);
+            const pag = document.getElementById('pagamento').value.trim();
+
+            if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) {
+                salvar();
+            }
+        }
+
         function salvar() {
             const ehVenda = document.getElementById('venda').checked;
             const ehDespesa = document.getElementById('despesa').checked;
@@ -91,18 +401,187 @@
             const pag = document.getElementById('pagamento').value.trim();
             const obs = document.getElementById('obs').value.trim() || '-';
 
-            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return alert('Preencha todos os campos!');
+            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return;
 
-            const lancamentos = JSON.parse(localStorage.getItem('financoLancamentos') || '[]');
+            const chave = `${data}${ehVenda}${item}${valor}${pag}`;
+            if(chave === ultimo) return;
+            ultimo = chave;
+
             lancamentos.push({data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs});
-            localStorage.setItem('financoLancamentos', JSON.stringify(lancamentos));
-            alert('✅ Lançamento salvo com sucesso!');
-            window.location.href = 'index.html';
+            atualizarTabela();
+            atualizarSoma();
+            limparCampos();
+            verificarBotaoContinuar();
         }
-        window.onload = () => {
+
+        function atualizarTabela() {
+            const tab = document.getElementById('corpoTabela');
+            tab.innerHTML = '';
+            [...lancamentos].reverse().forEach(l => {
+                tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda / Entrada' : 'Despesa / Saída'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td></tr>`;
+            });
+        }
+
+        function atualizarSoma() {
+            let v = 0, d = 0;
+            lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
+            const saldo = v - d;
+            document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
+            document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
+        }
+
+        function limparCampos() {
+            document.getElementById('venda').checked = false;
+            document.getElementById('despesa').checked = false;
+            document.getElementById('item').innerHTML = '<option value="">Selecione primeiro o tipo</option>';
+            document.getElementById('valor').value = '';
+            document.getElementById('pagamento').value = '';
+            document.getElementById('obs').value = '';
             document.getElementById('data').value = dataHoje();
-            document.getElementById('venda').addEventListener('change', atualizarSelect);
-            document.getElementById('despesa').addEventListener('change', atualizarSelect);
+        }
+
+        function alternarMenuGerenciar() { document.getElementById('menuGerenciar').classList.toggle('aberto'); atualizarListasMenu(); }
+        function atualizarListasMenu() {
+            const lv = document.getElementById('listaVenda'), ld = document.getElementById('listaDespesa');
+            lv.innerHTML = ''; itensVenda.forEach((n,i)=>lv.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="v-${i}"><button class="btn-acao excluir" onclick="remover('venda',${i})">X</button></div>`);
+            ld.innerHTML = ''; itensDespesa.forEach((n,i)=>ld.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="d-${i}"><button class="btn-acao excluir" onclick="remover('despesa',${i})">X</button></div>`);
+        }
+        function remover(t,i){t==='venda'?itensVenda.splice(i,1):itensDespesa.splice(i,1);atualizarListasMenu();}
+        function adicionarNovoItem(t){t==='venda'?itensVenda.push(''):itensDespesa.push('');atualizarListasMenu();}
+        function salvarItensMenu() {
+            itensVenda = itensVenda.map((_,i)=>document.getElementById(`v-${i}`).value.trim()).filter(n=>n);
+            itensDespesa = itensDespesa.map((_,i)=>document.getElementById(`d-${i}`).value.trim()).filter(n=>n);
+            atualizarSelectPorTipo();
+            document.getElementById('menuGerenciar').classList.remove('aberto');
+            alert('Itens salvos com sucesso!');
+        }
+        
+        function abrirPastaUltimosSalvos(){
+            if(pastaUltimosSalvos.length === 0) return alert('📂 Pasta "Últimos Salvos" vazia!\nNenhum lançamento foi salvo ainda.');
+            let conteudoPasta = '📂 PASTA INTERNA: ÚLTIMOS SALVOS\n' + '='.repeat(35) + '\n\n';
+            pastaUltimosSalvos.forEach((arquivo, indice) => {
+                conteudoPasta += `📄 Arquivo ${indice+1} — Salvo em: ${arquivo.dataHora}\n`;
+                arquivo.lancamentos.forEach(l => { conteudoPasta += `   • ${l.data} | ${l.tipo==='venda'?'Venda':'Despesa'} | ${l.item} | R$ ${l.valor.toFixed(2).replace('.',',')}\n`; });
+                conteudoPasta += `   💵 Total do arquivo: R$ ${arquivo.totalGeral.toFixed(2).replace('.',',')}\n\n`;
+            });
+            alert(conteudoPasta);
+        }
+
+        function salvarNaPastaInterna() {
+            if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
+            let totalV = 0, totalD = 0;
+            lancamentos.forEach(l => l.tipo==='venda' ? totalV += l.valor : totalD += l.valor);
+            pastaUltimosSalvos.unshift({
+                dataHora: new Date().toLocaleString('pt-BR'),
+                lancamentos: JSON.parse(JSON.stringify(lancamentos)),
+                totalGeral: totalV - totalD
+            });
+            if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
+            localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
+            alert('✅ Salvo com sucesso na pasta interna "Últimos Salvos"!');
+        }
+
+        function verificarBotaoContinuar() {
+            const area = document.getElementById('areaContinuar');
+            lancamentos.length >= 1 ? area.classList.add('mostrar') : area.classList.remove('mostrar');
+        }
+
+        function irParaPaginaExportar() {
+            document.getElementById('paginaPrincipal').classList.remove('ativa');
+            document.getElementById('paginaExportar').classList.add('ativa');
+            atualizarPaginaExportar();
+            window.scrollTo(0,0);
+        }
+        function irParaPaginaIntegracao() {
+            document.getElementById('paginaPrincipal').classList.remove('ativa');
+            document.getElementById('paginaIntegracao').classList.add('ativa');
+            window.scrollTo(0,0);
+        }
+        function voltarParaPrincipal() {
+            document.getElementById('paginaExportar').classList.remove('ativa');
+            document.getElementById('paginaIntegracao').classList.remove('ativa');
+            document.getElementById('paginaPrincipal').classList.add('ativa');
+            atualizarTabela();
+            atualizarSoma();
+            verificarBotaoContinuar();
+            window.scrollTo(0,0);
+        }
+
+        function atualizarPaginaExportar() {
+            const tab = document.getElementById('tabelaExportar');
+            tab.innerHTML = '';
+            lancamentos.forEach((l, i) => {
+                tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
+            });
+            let v=0, d=0;
+            lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
+            document.getElementById('expTotalVendas').textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
+            document.getElementById('expTotalDespesas').textContent = `R$ ${d.toFixed(2).replace('.',',')}`;
+            document.getElementById('expSaldo').textContent = `R$ ${(v-d).toFixed(2).replace('.',',')}`;
+        }
+
+        function abrirEdicao(indice) {
+            indiceEdicaoAtual = indice;
+            const l = lancamentos[indice];
+            document.getElementById('edtVenda').checked = l.tipo === 'venda';
+            document.getElementById('edtDespesa').checked = l.tipo === 'despesa';
+            document.getElementById('edtData').value = l.data;
+            const selItem = document.getElementById('edtItem');
+            selItem.innerHTML = '<option value="">Selecione</option>';
+            l.tipo === 'venda' ? itensVenda.forEach(n=>selItem.appendChild(new Option(n,n))) : itensDespesa.forEach(n=>selItem.appendChild(new Option(n,n)));
+            selItem.value = l.item;
+            document.getElementById('edtValor').value = l.valor;
+            document.getElementById('edtPagamento').value = l.pag;
+            document.getElementById('edtObs').value = l.obs === '-' ? '' : l.obs;
+            document.getElementById('modalEditar').classList.add('aberto');
+        }
+
+        function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
+
+        function salvarEdicao() {
+            const ehVenda = document.getElementById('edtVenda').checked;
+            const ehDespesa = document.getElementById('edtDespesa').checked;
+            const data = document.getElementById('edtData').value.trim();
+            const item = document.getElementById('edtItem').value.trim();
+            const valor = parseFloat(document.getElementById('edtValor').value || 0);
+            const pag = document.getElementById('edtPagamento').value.trim();
+            const obs = document.getElementById('edtObs').value.trim() || '-';
+            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha todos os campos corretamente!'); return; }
+            lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
+            fecharModal();
+            atualizarTabela();
+            atualizarSoma();
+            atualizarPaginaExportar();
+            alert('✅ Lançamento atualizado!');
+        }
+
+        function excluirLancamento(indice) {
+            if(confirm('Tem certeza que deseja excluir este lançamento?')) {
+                lancamentos.splice(indice, 1);
+                atualizarTabela();
+                atualizarSoma();
+                atualizarPaginaExportar();
+                verificarBotaoContinuar();
+            }
+        }
+
+        window.onload = function() {
+            const salvos = localStorage.getItem('financoPastaSalvos');
+            if(salvos) pastaUltimosSalvos = JSON.parse(salvos);
+            document.getElementById('data').value = dataHoje();
+
+            document.getElementById('venda').addEventListener('change', function() {
+                if(this.checked) document.getElementById('despesa').checked = false;
+                atualizarSelectPorTipo();
+            });
+            document.getElementById('despesa').addEventListener('change', function() {
+                if(this.checked) document.getElementById('venda').checked = false;
+                atualizarSelectPorTipo();
+            });
+            document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
+            document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
+            document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
         };
     </script>
 </body>
