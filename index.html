@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Financo - Controle Financeiro</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
     <style>
         * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
         html { font-size: 16px; }
@@ -133,6 +134,8 @@
             <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
             <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
             <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
+            <!-- AQUI: Mantive só Carregar da Nuvem na página inicial -->
+            <button class="btn aviso pequeno" onclick="carregarDoSupabase()">☁️ Carregar da Nuvem</button>
         </div>
 
         <div class="form" id="formulario">
@@ -218,6 +221,8 @@
             <div class="grupo-botoes-exportar">
                 <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
                 <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
+                <!-- AQUI: Botão Salvar na Nuvem fica só aqui, na página de salvamento -->
+                <button class="btn sucesso" onclick="salvarNoSupabase()">☁️ Salvar tudo na Nuvem</button>
             </div>
         </div>
     </div>
@@ -243,6 +248,26 @@
     </div>
 
     <script>
+        // ================== CONEXÃO COM O SUPABASE ==================
+        const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
+        const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
+        const TABELA_SUPABASE = 'financo_dados';
+        let supabase = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (window.supabase && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+                    console.log('✅ Conectado ao Supabase!');
+                } else {
+                    console.warn('⚠️ Biblioteca do Supabase não carregada');
+                }
+            } catch (erro) {
+                console.warn('⚠️ Erro ao conectar:', erro.message);
+            }
+        });
+        // ==============================================================
+
         let lancamentos = [];
         let ultimo = '';
         let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
@@ -275,9 +300,7 @@
             const valor = parseFloat(document.getElementById('valor').value || 0);
             const pag = document.getElementById('pagamento').value.trim();
 
-            if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) {
-                salvar();
-            }
+            if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) salvar();
         }
 
         function salvar() {
@@ -345,9 +368,7 @@
             alert('Itens salvos com sucesso!');
         }
         
-        function abrirPastaUltimosSalvos(){
-            window.location.href = 'salvos.html';
-        }
+        function abrirPastaUltimosSalvos(){window.location.href = 'salvos.html';}
 
         function salvarNaPastaInterna() {
             if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
@@ -360,7 +381,7 @@
             });
             if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
             localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
-            alert('✅ Salvo com sucesso na pasta interna "Últimos Salvos"!');
+            alert('✅ Salvo localmente!');
         }
 
         function verificarBotaoContinuar() {
@@ -374,19 +395,12 @@
             atualizarPaginaExportar();
             window.scrollTo(0,0);
         }
-        function irParaPaginaIntegracao() {
-            window.location.href = 'integracao.html';
-        }
-        function irParaPaginaGrafico() {
-            window.location.href = 'grafico.html';
-        }
-        // FUNÇÃO CORRIGIDA - SEM REFERÊNCIA A PÁGINA QUE NÃO EXISTE
+        function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
+        function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
         function voltarParaPrincipal() {
             document.getElementById('paginaExportar').classList.remove('ativa');
             document.getElementById('paginaPrincipal').classList.add('ativa');
-            atualizarTabela();
-            atualizarSoma();
-            verificarBotaoContinuar();
+            atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
             window.scrollTo(0,0);
         }
 
@@ -429,24 +443,65 @@
             const valor = parseFloat(document.getElementById('edtValor').value || 0);
             const pag = document.getElementById('edtPagamento').value.trim();
             const obs = document.getElementById('edtObs').value.trim() || '-';
-            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha todos os campos corretamente!'); return; }
+            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha tudo corretamente!'); return; }
             lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
-            fecharModal();
-            atualizarTabela();
-            atualizarSoma();
-            atualizarPaginaExportar();
-            alert('✅ Lançamento atualizado!');
+            fecharModal(); atualizarTabela(); atualizarSoma(); atualizarPaginaExportar();
+            alert('✅ Atualizado!');
         }
 
         function excluirLancamento(indice) {
-            if(confirm('Tem certeza que deseja excluir este lançamento?')) {
+            if(confirm('Excluir esse lançamento?')) {
                 lancamentos.splice(indice, 1);
-                atualizarTabela();
-                atualizarSoma();
-                atualizarPaginaExportar();
-                verificarBotaoContinuar();
+                atualizarTabela(); atualizarSoma(); atualizarPaginaExportar(); verificarBotaoContinuar();
             }
         }
+
+        // ================== FUNÇÕES NUVEM ==================
+        async function salvarNoSupabase() {
+            if (!supabase) return alert('❌ Nuvem indisponível');
+            if (lancamentos.length === 0) return alert('Nenhum dado para salvar!');
+
+            try {
+                await supabase.from(TABELA_SUPABASE).delete().neq('id', 0);
+                const dados = lancamentos.map(l => ({
+                    data: l.data, tipo: l.tipo, item: l.item, valor: l.valor,
+                    pagamento: l.pag, observacao: l.obs,
+                    itens_venda: itensVenda, itens_despesa: itensDespesa
+                }));
+
+                const { erro } = await supabase.from(TABELA_SUPABASE).insert(dados);
+                if (erro) throw erro;
+                alert('✅ Salvo na nuvem com sucesso!');
+            } catch (erro) {
+                alert(`❌ Erro: ${erro.message}`);
+            }
+        }
+
+        async function carregarDoSupabase() {
+            if (!supabase) return alert('❌ Nuvem indisponível');
+            if (!confirm('Isso substituirá os dados atuais. Continuar?')) return;
+
+            try {
+                const { dados, erro } = await supabase.from(TABELA_SUPABASE).select('*');
+                if (erro) throw erro;
+                if (!dados || dados.length === 0) return alert('Nada salvo na nuvem ainda.');
+
+                lancamentos = dados.map(d => ({
+                    data: d.data, tipo: d.tipo, item: d.item, valor: d.valor,
+                    pag: d.pagamento, obs: d.observacao
+                }));
+
+                if (dados[0].itens_venda) itensVenda = dados[0].itens_venda;
+                if (dados[0].itens_despesa) itensDespesa = dados[0].itens_despesa;
+
+                atualizarTabela(); atualizarSoma(); atualizarSelectPorTipo();
+                atualizarPaginaExportar(); verificarBotaoContinuar();
+                alert(`✅ ${lancamentos.length} lançamentos carregados!`);
+            } catch (erro) {
+                alert(`❌ Erro: ${erro.message}`);
+            }
+        }
+        // =====================================================
 
         window.onload = function() {
             const salvos = localStorage.getItem('financoPastaSalvos');
