@@ -12,7 +12,7 @@
 
         .barra-botoes { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
         .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 0; min-width: 140px; max-width: 200px; }
-        .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; }
+        .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; text-decoration: none; }
         .btn.primario { background: #1565c0; color: white; }
         .btn.primario:hover { background: #0d47a1; }
         .btn.sucesso { background: #2e7d32; color: white; font-size: 1.05rem; padding: 1rem; }
@@ -89,28 +89,6 @@
         .caixa-exportar, .caixa-integracao { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
         .caixa-exportar h3, .caixa-integracao h3 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
 
-        .categoria-titulo { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; margin-bottom: 0.5rem; background: #f8f9fa; border-radius: 0.5rem; cursor: pointer; border: 1px solid #e9ecef; transition: 0.2s; }
-        .categoria-titulo:hover { background: #e9ecef; }
-        .categoria-titulo h4 { font-size: 1rem; color: #1565c0; }
-        .seta { transition: transform 0.3s ease; font-size: 0.875rem; }
-        .seta.aberto { transform: rotate(180deg); }
-
-        .lista-sistemas { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.3s ease; margin-bottom: 1rem; padding-left: 1rem; }
-        .lista-sistemas.aberto { max-height: 2000px; opacity: 1; }
-
-        .item-sistema { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid #f1f3f5; flex-wrap: wrap; }
-        .item-sistema:last-child { border-bottom: none; }
-        .info-sistema { flex: 1 1 200px; }
-        .info-sistema h5 { font-size: 0.95rem; color: #222; margin-bottom: 0.25rem; }
-        .info-sistema p { font-size: 0.8rem; color: #666; }
-        .status { padding: 0.25rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; }
-        .status.desconectado { background: #f3e5f5; color: #7b1fa2; }
-        .status.conectado { background: #e8f5e9; color: #2e7d32; }
-
-        .area-importacao { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
-        .area-importacao p { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }
-        .input-arquivo { margin-bottom: 0.75rem; }
-
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
         .modal.aberto { display: flex; }
         .conteudo-modal { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
@@ -118,17 +96,16 @@
         .cabecalho-modal h3 { color: #1565c0; font-size: 1.2rem; }
         .btn-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0; width: auto; }
         .btn-fechar:hover { color: #222; }
-        .aviso-config { font-size: 0.85rem; color: #666; background: #fff3e0; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; }
 
         @media print {
             body * { visibility: hidden; }
             .pagina.ativa, .pagina.ativa * { visibility: visible; }
             .pagina.ativa { position: absolute; left: 0; top: 0; width: 100%; }
-            .barra-botoes, .cabecalho-pagina button, .caixa-exportar, .caixa-integracao { display: none !important; }
+            .barra-botoes, .cabecalho-pagina button, .caixa-exportar { display: none !important; }
         }
 
         @media (min-width: 992px) { .barra-botoes { flex-wrap: nowrap; } .barra-botoes > div, .barra-botoes > .btn { flex: 1; max-width: none; } }
-        @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } h1 { font-size: 1.5rem; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .item-sistema { flex-direction: column; align-items: flex-start; } .btn.pequeno { width: 100%; } }
+        @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } h1 { font-size: 1.5rem; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .btn.pequeno { width: 100%; } }
     </style>
 </head>
 <body>
@@ -155,7 +132,7 @@
             <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
             <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
             <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
-            <button class="btn secundario">📊 Gráfico</button>
+            <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
         </div>
 
         <div class="form" id="formulario">
@@ -265,27 +242,6 @@
         </div>
     </div>
 
-    <div class="modal" id="modalConfigurar">
-        <div class="conteudo-modal">
-            <div class="cabecalho-modal">
-                <h3 id="tituloModalConfig">Configurar Sistema</h3>
-                <button class="btn-fechar" onclick="fecharModalConfiguracao()">×</button>
-            </div>
-            <div class="aviso-config">Preencha os dados de acesso fornecidos pelo sistema que deseja integrar. Suas informações ficam salvas apenas no seu dispositivo.</div>
-            <div class="linha"><div class="campo"><label>Chave API / Token</label><input type="text" id="cfgChave" placeholder="Cole a chave aqui"></div></div>
-            <div class="linha">
-                <div class="campo"><label>Usuário / ID</label><input type="text" id="cfgUsuario" placeholder="Seu usuário ou identificador"></div>
-                <div class="campo"><label>Senha / Código</label><input type="password" id="cfgSenha" placeholder="Senha de acesso"></div>
-            </div>
-            <div class="linha"><div class="campo"><label>URL do Servidor / Caminho Local</label><input type="text" id="cfgUrl" placeholder="Ex: localhost:3000 ou endereço do sistema"></div></div>
-            <div class="linha" style="margin-top: 1.5rem;">
-                <button class="btn secundario" style="flex:1;" onclick="fecharModalConfiguracao()">❌ Cancelar</button>
-                <button class="btn aviso" style="flex:1;" onclick="testarConexao()">🔍 Testar Conexão</button>
-                <button class="btn sucesso" style="flex:1;" onclick="salvarConfiguracao()">✅ Salvar</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         let lancamentos = [];
         let ultimo = '';
@@ -293,32 +249,11 @@
         let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
         let indiceEdicaoAtual = null;
         let pastaUltimosSalvos = [];
-        let sistemaAtualConfiguracao = '';
 
         function dataHoje() {
             const d = new Date();
             return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
         }
-
-        function alternarCategoria(titulo) {
-            const lista = titulo.nextElementSibling;
-            const seta = titulo.querySelector('.seta');
-            lista.classList.toggle('aberto');
-            seta.classList.toggle('aberto');
-        }
-
-        function abrirModalConfiguracao(nomeSistema) {
-            sistemaAtualConfiguracao = nomeSistema;
-            document.getElementById('tituloModalConfig').textContent = `Configurar: ${nomeSistema}`;
-            document.getElementById('cfgChave').value = '';
-            document.getElementById('cfgUsuario').value = '';
-            document.getElementById('cfgSenha').value = '';
-            document.getElementById('cfgUrl').value = '';
-            document.getElementById('modalConfigurar').classList.add('aberto');
-        }
-        function fecharModalConfiguracao() { document.getElementById('modalConfigurar').classList.remove('aberto'); sistemaAtualConfiguracao = ''; }
-        function testarConexao() { alert(`🔍 Testando conexão com ${sistemaAtualConfiguracao}...\n\nFunção pronta para receber validação real!`); }
-        function salvarConfiguracao() { alert(`✅ Configuração de ${sistemaAtualConfiguracao} salva com sucesso!`); fecharModalConfiguracao(); }
 
         function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
 
@@ -411,14 +346,7 @@
         }
         
         function abrirPastaUltimosSalvos(){
-            if(pastaUltimosSalvos.length === 0) return alert('📂 Pasta "Últimos Salvos" vazia!\nNenhum lançamento foi salvo ainda.');
-            let conteudoPasta = '📂 PASTA INTERNA: ÚLTIMOS SALVOS\n' + '='.repeat(35) + '\n\n';
-            pastaUltimosSalvos.forEach((arquivo, indice) => {
-                conteudoPasta += `📄 Arquivo ${indice+1} — Salvo em: ${arquivo.dataHora}\n`;
-                arquivo.lancamentos.forEach(l => { conteudoPasta += `   • ${l.data} | ${l.tipo==='venda'?'Venda':'Despesa'} | ${l.item} | R$ ${l.valor.toFixed(2).replace('.',',')}\n`; });
-                conteudoPasta += `   💵 Total do arquivo: R$ ${arquivo.totalGeral.toFixed(2).replace('.',',')}\n\n`;
-            });
-            alert(conteudoPasta);
+            window.location.href = 'salvos.html';
         }
 
         function salvarNaPastaInterna() {
@@ -449,9 +377,12 @@
         function irParaPaginaIntegracao() {
             window.location.href = 'integracao.html';
         }
+        function irParaPaginaGrafico() {
+            window.location.href = 'grafico.html';
+        }
+        // FUNÇÃO CORRIGIDA - SEM REFERÊNCIA A PÁGINA QUE NÃO EXISTE
         function voltarParaPrincipal() {
             document.getElementById('paginaExportar').classList.remove('ativa');
-            document.getElementById('paginaIntegracao').classList.remove('ativa');
             document.getElementById('paginaPrincipal').classList.add('ativa');
             atualizarTabela();
             atualizarSoma();
