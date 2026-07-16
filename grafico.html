@@ -1,1 +1,234 @@
-0
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Financo - Gráficos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
+        html { font-size: 16px; }
+        body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
+        h1 { text-align: center; color: #1565c0; margin-bottom: 1.5rem; font-size: 1.75rem; }
+
+        .barra-botoes { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; transition: 0.2s; text-decoration: none; }
+        .btn.voltar { background: #616161; color: white; }
+        .btn.voltar:hover { background: #424242; }
+        .btn.primario { background: #1565c0; color: white; }
+        .btn.primario:hover { background: #0d47a1; }
+
+        .aviso-vazio { background: white; padding: 2rem; border-radius: 0.5rem; text-align: center; color: #666; font-size: 1rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 2rem; }
+
+        .container-grafico { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem; }
+        .titulo-grafico { color: #1565c0; font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
+        .grafico-wrapper { position: relative; height: 350px; width: 100%; }
+
+        .resumo { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+        .card { flex: 1 1 150px; padding: 1rem; border-radius: 0.5rem; text-align: center; font-size: 0.9rem; }
+        .card.vendas { background: #e8f5e9; color: #2e7d32; }
+        .card.despesas { background: #ffebee; color: #c62828; }
+        .card.saldo { background: #e3f2fd; color: #1565c0; }
+        .valor { font-size: 1.3rem; font-weight: bold; margin-top: 0.3rem; }
+
+        @media print {
+            body { background: white; }
+            .barra-botoes { display: none !important; }
+            .container-grafico { box-shadow: none; border: 1px solid #eee; margin-bottom: 1.5rem; }
+            .aviso-vazio { box-shadow: none; border: 1px solid #eee; }
+            .resumo .card { box-shadow: none; border: 1px solid #eee; }
+            @page { size: A4; margin: 1.5cm; }
+        }
+
+        @media (max-width: 768px) {
+            .grafico-wrapper { height: 300px; }
+            .card { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📊 Gráficos e Estatísticas</h1>
+    <div class="barra-botoes">
+        <a href="index.html" class="btn voltar">⬅️ Voltar ao Início</a>
+        <button class="btn primario" onclick="baixarPDF()">📄 Baixar em PDF</button>
+    </div>
+
+    <div id="conteudoGrafico"></div>
+
+    <script>
+        function carregarDadosEGrafico() {
+            const conteudo = document.getElementById('conteudoGrafico');
+            const dados = localStorage.getItem('financoPastaSalvos');
+
+            if (!dados) {
+                conteudo.innerHTML = `
+                    <div class="aviso-vazio">
+                        <p>Nenhum lançamento salvo ainda para gerar gráficos!</p>
+                        <p style="margin-top: 0.5rem;">Salve seus lançamentos na página "Salvar e Exportar" para visualizar aqui.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const listaSalvos = JSON.parse(dados);
+            if (listaSalvos.length === 0) {
+                conteudo.innerHTML = `
+                    <div class="aviso-vazio">
+                        <p>Nenhum lançamento salvo ainda para gerar gráficos!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Processa dados para todos os gráficos
+            const labels = [];
+            const valoresVendas = [];
+            const valoresDespesas = [];
+            const valoresSaldo = [];
+            let totalGeralVendas = 0;
+            let totalGeralDespesas = 0;
+
+            listaSalvos.forEach((registro, indice) => {
+                labels.push(`Registro ${listaSalvos.length - indice}`);
+                let v = 0, d = 0;
+                registro.lancamentos.forEach(l => {
+                    l.tipo === 'venda' ? v += l.valor : d += l.valor;
+                });
+                valoresVendas.push(v);
+                valoresDespesas.push(d);
+                valoresSaldo.push(v - d);
+                totalGeralVendas += v;
+                totalGeralDespesas += d;
+            });
+
+            const saldoGeral = totalGeralVendas - totalGeralDespesas;
+
+            conteudo.innerHTML = `
+                <!-- Gráfico de Barras -->
+                <div class="container-grafico">
+                    <h3 class="titulo-grafico">Comparativo: Vendas x Despesas por Registro</h3>
+                    <div class="grafico-wrapper">
+                        <canvas id="graficoBarras"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Linhas -->
+                <div class="container-grafico">
+                    <h3 class="titulo-grafico">Evolução do Saldo por Registro</h3>
+                    <div class="grafico-wrapper">
+                        <canvas id="graficoLinhas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Rosca -->
+                <div class="container-grafico">
+                    <h3 class="titulo-grafico">Distribuição Total: Entradas vs Saídas</h3>
+                    <div class="grafico-wrapper">
+                        <canvas id="graficoPizza"></canvas>
+                    </div>
+                </div>
+
+                <div class="resumo">
+                    <div class="card vendas">
+                        <div>Total de Vendas</div>
+                        <div class="valor">R$ ${totalGeralVendas.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="card despesas">
+                        <div>Total de Despesas</div>
+                        <div class="valor">R$ ${totalGeralDespesas.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="card saldo">
+                        <div>Saldo Geral</div>
+                        <div class="valor">R$ ${saldoGeral.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                </div>
+            `;
+
+            // 1. Gráfico de Barras
+            new Chart(document.getElementById('graficoBarras'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Vendas / Entradas',
+                            data: valoresVendas,
+                            backgroundColor: '#2e7d32',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Despesas / Saídas',
+                            data: valoresDespesas,
+                            backgroundColor: '#c62828',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } }
+                    }
+                }
+            });
+
+            // 2. Gráfico de Linhas
+            new Chart(document.getElementById('graficoLinhas'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Saldo Líquido',
+                        data: valoresSaldo,
+                        borderColor: '#1565c0',
+                        backgroundColor: 'rgba(21, 101, 192, 0.15)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#1565c0'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { 
+                            ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                }
+            });
+
+            // 3. Gráfico de Rosca
+            new Chart(document.getElementById('graficoPizza'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vendas', 'Despesas'],
+                    datasets: [{
+                        data: [totalGeralVendas, totalGeralDespesas],
+                        backgroundColor: ['#2e7d32', '#c62828'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // Função para baixar em PDF
+        function baixarPDF() {
+            window.print();
+        }
+
+        window.onload = carregarDadosEGrafico;
+    </script>
+</body>
+</html>
