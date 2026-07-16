@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financo - Integrações</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    max-width:1200px;
+    margin:1rem auto;
+    padding:0 .75rem;
+    background:#f5f5f5;
+}
+
+.btn{
+    border:none;
+    border-radius:.5rem;
+    padding:.75rem 1rem;
+    cursor:pointer;
+    font-size:.9rem;
+    transition:.2s;
+}
+
+.btn.voltar{
+    background:#616161;
+    color:#fff;
+}
+
+.btn.voltar:hover{
+    background:#424242;
+}
+
+.btn.primario{
+    background:#1565c0;
+    color:#fff;
+}
+
+.btn.primario:hover{
+    background:#0d47a1;
+}
+
+.btn.sucesso{
+    background:#2e7d32;
+    color:#fff;
+}
+
+.btn.sucesso:hover{
+    background:#1b5e20;
+}
+
+.btn.aviso{
+    background:#f57c00;
+    color:#fff;
+}
+
+.btn.aviso:hover{
+    background:#ef6c00;
+}
+
+.btn.pequeno{
+    padding:.5rem;
+    font-size:.85rem;
+}
+
+.cabecalho-pagina{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:1.5rem;
+    flex-wrap:wrap;
+    gap:1rem;
+}
+
+.titulo-pagina{
+    color:#1565c0;
+    font-size:1.5rem;
+}
+
+.caixa-integracao{
+    background:#fff;
+    padding:1.5rem;
+    border-radius:.5rem;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+
+.caixa-integracao h3{
+    margin-bottom:1rem;
+}
+
+.categoria{
+    margin-bottom:1rem;
+}
+
+.categoria-titulo{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:.875rem 1rem;
+    background:#f8f9fa;
+    border:1px solid #e9ecef;
+    border-radius:.5rem;
+    cursor:pointer;
+}
+
+.categoria-titulo h4{
+    color:#1565c0;
+}
+
+.seta{
+    transition:.3s;
+}
+
+.seta.aberto{
+    transform:rotate(180deg);
+}
+
+.lista-sistemas{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:.3s;
+    padding-left:1rem;
+}
+
+.lista-sistemas.aberto{
+    max-height:2000px;
+    opacity:1;
+}
+
+.item-sistema{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:.75rem;
+    padding:.75rem 1rem;
+    border-bottom:1px solid #eee;
+    flex-wrap:wrap;
+}
+
+.info-sistema{
+    flex:1;
+}
+
+.info-sistema h5{
+    margin-bottom:.25rem;
+}
+
+.info-sistema p{
+    font-size:.8rem;
+    color:#666;
+}
+
+.status{
+    padding:.25rem .5rem;
+    border-radius:1rem;
+    font-size:.75rem;
+}
+
+.status.desconectado{
+    background:#f3e5f5;
+    color:#7b1fa2;
+}
+
+.area-importacao{
+    margin-top:1.5rem;
+    padding-top:1.5rem;
+    border-top:1px solid #eee;
+}
+
+.input-arquivo{
+    margin:.75rem 0;
+}
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    align-items:center;
+    justify-content:center;
+    z-index:999;
+    padding:1rem;
+}
+
+.modal.aberto{
+    display:flex;
+}
+
+.conteudo-modal{
+    background:#fff;
+    width:100%;
+    max-width:520px;
+    padding:1.5rem;
+    border-radius:.5rem;
+}
+
+.cabecalho-modal{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:1rem;
+}
+
+.btn-fechar{
+    background:none;
+    border:none;
+    font-size:1.5rem;
+    cursor:pointer;
+}
+
+.aviso-config{
+    background:#fff3e0;
+    padding:.75rem;
+    border-radius:.375rem;
+    margin-bottom:1rem;
+    font-size:.85rem;
+}
+
+.linha{
+    display:flex;
+    gap:1rem;
+    margin-bottom:1rem;
+    flex-wrap:wrap;
+}
+
+.campo{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:.3rem;
+}
+
+input{
+    padding:.65rem;
+    border:1px solid #ccc;
+    border-radius:.375rem;
+}
+</style>
+</head>
+
+<body>
+
+<div class="cabecalho-pagina">
+    <button class="btn voltar" onclick="window.location.href='index.html'">
+        ⬅️ Voltar
+    </button>
+
+    <h2 class="titulo-pagina">🔗 Integrações</h2>
+
+    <div></div>
+</div>
+
+<div class="caixa-integracao">
+
+    <h3>Centro de Conexões Flexíveis</h3>
+
+    <p style="margin-bottom:1.5rem;color:#555;">
+        Estrutura preparada para receber qualquer sistema — adicione novos conectores a qualquer momento.
+    </p>
+
+    <div class="categoria">
+        <div class="categoria-titulo" onclick="alternarCategoria(this)">
+            <h4>💳 PDVs e Maquininhas</h4>
+            <span class="seta">▼</span>
+        </div>
+
+        <div class="lista-sistemas">
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>Mercado Pago</h5>
+                    <p>PDV, maquininhas e pagamentos online</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Mercado Pago')">Configurar</button>
+            </div>
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>Stone</h5>
+                    <p>Máquinas e sistema de vendas</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Stone')">Configurar</button>
+            </div>
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>PagSeguro / UOL</h5>
+                    <p>PDV físico e online</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('PagSeguro / UOL')">Configurar</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="categoria">
+        <div class="categoria-titulo" onclick="alternarCategoria(this)">
+            <h4>🛒 Sistemas de Pedido e Comanda</h4>
+            <span class="seta">▼</span>
+        </div>
+
+        <div class="lista-sistemas">
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>Sipag / GrandChef</h5>
+                    <p>Comandas e restaurantes</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Sipag / GrandChef')">Configurar</button>
+            </div>
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>Saipos / SystemPDV</h5>
+                    <p>Comércio e serviços locais</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Saipos / SystemPDV')">Configurar</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="categoria">
+        <div class="categoria-titulo" onclick="alternarCategoria(this)">
+            <h4>📱 Meios de Pagamento Digitais</h4>
+            <span class="seta">▼</span>
+        </div>
+
+        <div class="lista-sistemas">
+
+            <div class="item-sistema">
+                <div class="info-sistema">
+                    <h5>Pix</h5>
+                    <p>Recebimento automático</p>
+                </div>
+                <span class="status desconectado">Desconectado</span>
+                <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Pix')">Configurar</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="area-importacao">
+        <h4>📄 Importação Universal de Arquivos</h4>
+
+        <p>
+            Funciona com qualquer sistema que exporte relatórios:
+            CSV, Excel, TXT e JSON.
+        </p>
+
+        <input
+            type="file"
+            class="input-arquivo"
+            accept=".csv,.xlsx,.xls,.txt,.json">
+
+        <button class="btn sucesso" style="width:100%;">
+            📥 Importar Lançamentos
+        </button>
+    </div>
+
+</div>
+
+<div class="modal" id="modalConfigurar">
+    <div class="conteudo-modal">
+
+        <div class="cabecalho-modal">
+            <h3 id="tituloModalConfig">Configurar Sistema</h3>
+            <button class="btn-fechar" onclick="fecharModalConfiguracao()">×</button>
+        </div>
+
+        <div class="aviso-config">
+            Preencha os dados de acesso fornecidos pelo sistema que deseja integrar.
+        </div>
+
+        <div class="linha">
+            <div class="campo">
+                <label>Chave API / Token</label>
+                <input type="text" id="cfgChave">
+            </div>
+        </div>
+
+        <div class="linha">
+            <div class="campo">
+                <label>Usuário</label>
+                <input type="text" id="cfgUsuario">
+            </div>
+
+            <div class="campo">
+                <label>Senha</label>
+                <input type="password" id="cfgSenha">
+            </div>
+        </div>
+
+        <div class="linha">
+            <div class="campo">
+                <label>URL do Servidor</label>
+                <input type="text" id="cfgUrl">
+            </div>
+        </div>
+
+        <div class="linha">
+            <button class="btn aviso" onclick="testarConexao()">🔍 Testar</button>
+            <button class="btn sucesso" onclick="salvarConfiguracao()">✅ Salvar</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let sistemaAtualConfiguracao = '';
+
+function alternarCategoria(titulo){
+    const lista = titulo.nextElementSibling;
+    const seta = titulo.querySelector('.seta');
+
+    lista.classList.toggle('aberto');
+    seta.classList.toggle('aberto');
+}
+
+function abrirModalConfiguracao(nomeSistema){
+    sistemaAtualConfiguracao = nomeSistema;
+    document.getElementById('tituloModalConfig').textContent =
+        'Configurar: ' + nomeSistema;
+
+    document.getElementById('modalConfigurar')
+        .classList.add('aberto');
+}
+
+function fecharModalConfiguracao(){
+    document.getElementById('modalConfigurar')
+        .classList.remove('aberto');
+}
+
+function testarConexao(){
+    alert('🔍 Testando conexão com ' + sistemaAtualConfiguracao);
+}
+
+function salvarConfiguracao(){
+    alert('✅ Configuração salva com sucesso!');
+    fecharModalConfiguracao();
+}
+</script>
+
+</body>
+</html>
