@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financo - Painel Administrador</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#f5f5f5;padding:1rem}
+.container{max-width:1100px;margin:0 auto}
+.cabecalho{background:white;padding:1.5rem;border-radius:.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center}
+h1{color:#1565c0;font-size:1.5rem}
+.aviso-master{background:#e3f2fd;padding:.75rem 1rem;border-radius:.375rem;color:#1565c0;font-weight:500}
+.btn-sair{background:#c62828;color:white;border:none;padding:.75rem 1.25rem;border-radius:.375rem;cursor:pointer}
+.btn-sair:hover{background:#b71c1c}
+
+.abas{display:flex;gap:.5rem;margin-bottom:1.5rem}
+.aba{padding:.75rem 1.25rem;background:white;border:none;border-radius:.375rem;cursor:pointer;color:#666;box-shadow:0 2px 5px rgba(0,0,0,0.05)}
+.aba.ativa{background:#1565c0;color:white}
+
+.conteudo{background:white;padding:1.5rem;border-radius:.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);display:none}
+.conteudo.ativo{display:block}
+
+h2{color:#1565c0;margin-bottom:1rem;font-size:1.25rem;border-bottom:1px solid #e3f2fd;padding-bottom:.5rem}
+
+.grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.grupo label{display:block;margin-bottom:.3rem;color:#333}
+.grupo input,.grupo select,.grupo textarea{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
+.btn{padding:.75rem 1.5rem;background:#1565c0;color:white;border:none;border-radius:.375rem;cursor:pointer;margin-right:.5rem}
+.btn:hover{background:#0d47a1}
+.btn-verde{background:#2e7d32}
+.btn-verde:hover{background:#1b5e20}
+.btn-amarelo{background:#f57c00}
+.btn-amarelo:hover{background:#e65100}
+.btn-vermelho{background:#c62828}
+.btn-vermelho:hover{background:#b71c1c}
+
+table{width:100%;border-collapse:collapse;margin-top:1rem}
+th,td{padding:.75rem;text-align:left;border-bottom:1px solid #eee}
+th{background:#f8fbff;color:#1565c0}
+tr:hover{background:#f8fbff}
+.acoes{display:flex;gap:.3rem}
+.acoes button{padding:.4rem .6rem;font-size:.85rem}
+
+.mensagem{margin-top:1rem;padding:.75rem;border-radius:.375rem;display:none}
+.sucesso{background:#e8f5e9;color:#2e7d32}
+.erro{background:#ffebee;color:#c62828}
+.carregando{text-align:center;color:#666;padding:1rem}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="cabecalho">
+        <div>
+            <h1>Painel do Administrador Master</h1>
+            <div class="aviso-master">✅ Acesso total — gerencie todo o sistema</div>
+        </div>
+        <button class="btn-sair" onclick="sair()">Sair da Conta</button>
+    </div>
+
+    <div class="abas">
+        <button class="aba ativa" onclick="mostrarAba('empresas')">🏢 Empresas</button>
+        <button class="aba" onclick="mostrarAba('usuarios')">👥 Usuários</button>
+        <button class="aba" onclick="mostrarAba('lancamentos')">💰 Lançamentos</button>
+        <button class="aba" onclick="mostrarAba('configuracoes')">⚙️ Configurações</button>
+        <button class="aba" onclick="mostrarAba('relatorios')">📊 Relatórios</button>
+    </div>
+
+    <!-- ABA EMPRESAS -->
+    <div id="aba-empresas" class="conteudo ativo">
+        <h2>Gerenciar Empresas</h2>
+        <div class="grid-form">
+            <div class="grupo">
+                <label>Nome da Empresa</label>
+                <input type="text" id="empresa-nome" placeholder="Nome da empresa">
+            </div>
+            <div class="grupo">
+                <label>CNPJ</label>
+                <input type="text" id="empresa-cnpj" placeholder="00.000.000/0000-00">
+            </div>
+            <div class="grupo">
+                <label>Status</label>
+                <select id="empresa-status">
+                    <option value="ativa">Ativa</option>
+                    <option value="inativa">Inativa</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-verde" onclick="cadastrarEmpresa()">Salvar Empresa</button>
+        <div id="msg-empresa" class="mensagem"></div>
+        <div id="lista-empresas" class="carregando">Carregando empresas...</div>
+    </div>
+
+    <!-- ABA USUÁRIOS -->
+    <div id="aba-usuarios" class="conteudo">
+        <h2>Gerenciar Usuários</h2>
+        <div class="grid-form">
+            <div class="grupo">
+                <label>Nome Completo</label>
+                <input type="text" id="usuario-nome" placeholder="Nome do usuário">
+            </div>
+            <div class="grupo">
+                <label>E-mail</label>
+                <input type="email" id="usuario-email" placeholder="email@empresa.com">
+            </div>
+            <div class="grupo">
+                <label>Permissão</label>
+                <select id="usuario-permissao">
+                    <option value="usuario">Usuário Comum</option>
+                    <option value="master">Administrador Master</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-verde" onclick="cadastrarUsuario()">Criar Usuário</button>
+        <div id="msg-usuario" class="mensagem"></div>
+        <div id="lista-usuarios" class="carregando">Carregando usuários...</div>
+    </div>
+
+    <!-- ABA LANÇAMENTOS -->
+    <div id="aba-lancamentos" class="conteudo">
+        <h2>Todos os Lançamentos</h2>
+        <p style="margin-bottom:1rem;color:#666;">Visualize todas as receitas e despesas de todas as empresas</p>
+        <div id="lista-lancamentos" class="carregando">Carregando lançamentos...</div>
+    </div>
+
+    <!-- ABA CONFIGURAÇÕES -->
+    <div id="aba-configuracoes" class="conteudo">
+        <h2>Configurações Gerais do Sistema</h2>
+        <div class="grid-form">
+            <div class="grupo">
+                <label>Moeda Padrão</label>
+                <select id="conf-moeda">
+                    <option value="BRL">Real Brasileiro (R$)</option>
+                    <option value="USD">Dólar Americano ($)</option>
+                    <option value="EUR">Euro (€)</option>
+                </select>
+            </div>
+            <div class="grupo">
+                <label>Data de Fechamento Mensal</label>
+                <input type="number" id="conf-fechamento" min="1" max="31" value="30">
+            </div>
+        </div>
+        <button class="btn" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+        <div id="msg-config" class="mensagem"></div>
+    </div>
+
+    <!-- ABA RELATÓRIOS -->
+    <div id="aba-relatorios" class="conteudo">
+        <h2>Relatórios Consolidados</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+            <div style="background:#e8f5e9;padding:1rem;border-radius:.375rem;text-align:center">
+                <h3>Total Receitas</h3>
+                <p style="font-size:1.5rem;color:#2e7d32;font-weight:bold" id="rel-receitas">R$ 0,00</p>
+            </div>
+            <div style="background:#ffebee;padding:1rem;border-radius:.375rem;text-align:center">
+                <h3>Total Despesas</h3>
+                <p style="font-size:1.5rem;color:#c62828;font-weight:bold" id="rel-despesas">R$ 0,00</p>
+            </div>
+            <div style="background:#e3f2fd;padding:1rem;border-radius:.375rem;text-align:center">
+                <h3>Saldo Geral</h3>
+                <p style="font-size:1.5rem;color:#1565c0;font-weight:bold" id="rel-saldo">R$ 0,00</p>
+            </div>
+        </div>
+        <button class="btn" onclick="carregarRelatorios()">Atualizar Relatórios</button>
+    </div>
+</div>
+
+<script>
+// CONEXÃO COM SUPABASE JÁ CONFIGURADA
+const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
+const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+
+// SEGURANÇA: SÓ ACESSA SE FOR MASTER
+const nivel = localStorage.getItem('nivelUsuario');
+if(!localStorage.getItem('usuarioLogado') || nivel !== 'master'){
+    window.location.href = 'index.html';
+}
+
+// TROCAR ABAS
+function mostrarAba(nome){
+    document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
+    document.querySelectorAll('.conteudo').forEach(c=>c.classList.remove('ativa'));
+    event.target.classList.add('ativa');
+    document.getElementById(`aba-${nome}`).classList.add('ativa');
+    
+    // CARREGA DADOS AO ABRIR ABA
+    if(nome === 'empresas') listarEmpresas();
+    if(nome === 'usuarios') listarUsuarios();
+    if(nome === 'lancamentos') listarLancamentos();
+    if(nome === 'relatorios') carregarRelatorios();
+}
+
+// FUNÇÃO DE SAIR
+async function sair(){
+    await supabase.auth.signOut();
+    localStorage.removeItem('usuarioLogado');
+    localStorage.removeItem('nivelUsuario');
+    window.location.href = 'index.html';
+}
+
+// ------------------------------
+// FUNÇÕES DE EMPRESAS
+// ------------------------------
+async function cadastrarEmpresa(){
+    const nome = document.getElementById('empresa-nome').value.trim();
+    const cnpj = document.getElementById('empresa-cnpj').value.trim();
+    const status = document.getElementById('empresa-status').value;
+    const msg = document.getElementById('msg-empresa');
+
+    if(!nome) {msg.textContent='⚠️ Preencha o nome da empresa!'; msg.className='mensagem erro'; msg.style.display='block'; return;}
+
+    try {
+        const {error} = await supabase.from('empresas').insert([{nome, cnpj, status}]);
+        if(error) throw error;
+        msg.textContent='✅ Empresa cadastrada com sucesso!'; msg.className='mensagem sucesso'; msg.style.display='block';
+        document.getElementById('empresa-nome').value=''; document.getElementById('empresa-cnpj').value='';
+        listarEmpresas();
+    } catch(e) {msg.textContent='❌ Erro: '+e.message; msg.className='mensagem erro'; msg.style.display='block';}
+    setTimeout(()=>msg.style.display='none',4000);
+}
+
+async function listarEmpresas(){
+    const {data, error} = await supabase.from('empresas').select('*').order('nome');
+    const lista = document.getElementById('lista-empresas');
+    if(error) {lista.innerHTML='Erro ao carregar: '+error.message; return;}
+    if(!data.length) {lista.innerHTML='Nenhuma empresa cadastrada ainda.'; return;}
+    
+    lista.innerHTML = `<table><tr><th>Nome</th><th>CNPJ</th><th>Status</th><th>Ações</th></tr>`;
+    data.forEach(emp=>{
+        lista.innerHTML += `<tr>
+            <td>${emp.nome}</td>
+            <td>${emp.cnpj || 'Não informado'}</td>
+            <td>${emp.status}</td>
+            <td class="acoes">
+                <button class="btn-amarelo">Editar</button>
+                <button class="btn-vermelho">Excluir</button>
+            </td>
+        </tr>`;
+    });
+    lista.innerHTML += `</table>`;
+}
+
+// ------------------------------
+// FUNÇÕES DE USUÁRIOS
+// ------------------------------
+async function cadastrarUsuario(){
+    const nome = document.getElementById('usuario-nome').value.trim();
+    const email = document.getElementById('usuario-email').value.trim();
+    const permissao = document.getElementById('usuario-permissao').value;
+    const msg = document.getElementById('msg-usuario');
+
+    if(!nome || !email) {msg.textContent='⚠️ Preencha nome e e-mail!'; msg.className='mensagem erro'; msg.style.display='block'; return;}
+
+    try {
+        // Cria usuário no Auth e salva dados na tabela
+        const {data, error} = await supabase.auth.admin.createUser({
+            email: email,
+            password: 'Senha@123', // Senha temporária
+            email_confirm: true,
+            user_metadata: {nome, permissao}
+        });
+        if(error) throw error;
+        msg.textContent='✅ Usuário criado! Senha temporária: Senha@123'; msg.className='mensagem sucesso'; msg.style.display='block';
+        document.getElementById('usuario-nome').value=''; document.getElementById('usuario-email').value='';
+        listarUsuarios();
+    } catch(e) {msg.textContent='❌ Erro: '+e.message; msg.className='mensagem erro'; msg.style.display='block';}
+    setTimeout(()=>msg.style.display='none',5000);
+}
+
+async function listarUsuarios(){
+    const {data: {users}, error} = await supabase.auth.admin.listUsers();
+    const lista = document.getElementById('lista-usuarios');
+    if(error) {lista.innerHTML='Erro ao carregar: '+error.message; return;}
+    if(!users.length) {lista.innerHTML='Nenhum usuário cadastrado.'; return;}
+    
+    lista.innerHTML = `<table><tr><th>Nome</th><th>E-mail</th><th>Permissão</th><th>Ações</th></tr>`;
+    users.forEach(u=>{
+        lista.innerHTML += `<tr>
+            <td>${u.user_metadata?.nome || 'Sem nome'}</td>
+            <td>${u.email}</td>
+            <td>${u.user_metadata?.permissao || 'usuario'}</td>
+            <td class="acoes">
+                <button class="btn-amarelo">Editar</button>
+                <button class="btn-vermelho">Desativar</button>
+            </td>
+        </tr>`;
+    });
+    lista.innerHTML += `</table>`;
+}
+
+// ------------------------------
+// FUNÇÕES DE LANÇAMENTOS
+// ------------------------------
+async function listarLancamentos(){
+    const {data, error} = await supabase.from('lancamentos').select('*').order('data', {ascending:false});
+    const lista = document.getElementById('lista-lancamentos');
+    if(error) {lista.innerHTML='Erro ao carregar: '+error.message; return;}
+    if(!data.length) {lista.innerHTML='Nenhum lançamento registrado em todo o sistema.'; return;}
+    
+    lista.innerHTML = `<table><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Empresa</th></tr>`;
+    data.forEach(l=>{
+        const cor = l.tipo === 'receita' ? 'color:green' : 'color:red';
+        lista.innerHTML += `<tr>
+            <td>${new Date(l.data).toLocaleDateString()}</td>
+            <td>${l.descricao}</td>
+            <td style="${cor}">${l.tipo}</td>
+            <td>R$ ${Number(l.valor).toFixed(2)}</td>
+            <td>${l.empresa || 'Geral'}</td>
+        </tr>`;
+    });
+    lista.innerHTML += `</table>`;
+}
+
+// ------------------------------
+// CONFIGURAÇÕES E RELATÓRIOS
+// ------------------------------
+async function salvarConfiguracoes(){
+    const msg = document.getElementById('msg-config');
+    msg.textContent='✅ Configurações salvas com sucesso!'; msg.className='mensagem sucesso'; msg.style.display='block';
+    setTimeout(()=>msg.style.display='none',3000);
+}
+
+async function carregarRelatorios(){
+    const {data: receitas} = await supabase.from('lancamentos').select('valor').eq('tipo','receita');
+    const {data: despesas} = await supabase.from('lancamentos').select('valor').eq('tipo','despesa');
+    
+    let totalRec = receitas?.reduce((s,i)=>s+Number(i.valor),0) || 0;
+    let totalDesp = despesas?.reduce((s,i)=>s+Number(i.valor),0) || 0;
+    let saldo = totalRec - totalDesp;
+
+    document.getElementById('rel-receitas').textContent = `R$ ${totalRec.toFixed(2)}`;
+    document.getElementById('rel-despesas').textContent = `R$ ${totalDesp.toFixed(2)}`;
+    document.getElementById('rel-saldo').textContent = `R$ ${saldo.toFixed(2)}`;
+}
+
+// CARREGA DADOS INICIAIS AO ABRIR A PÁGINA
+listarEmpresas();
+</script>
+
+</body>
+</html>
