@@ -3,68 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Financo - Acesso</title>
+<title>Financo</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
 body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;padding:1rem}
-.caixa-acesso{background:white;padding:2rem;border-radius:.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);width:100%;max-width:420px}
-h1{color:#1565c0;text-align:center;margin-bottom:1.5rem;font-size:2.2rem;font-weight:bold}
-.abas{display:flex;margin-bottom:1.5rem;border-bottom:1px solid #eee}
-.aba{flex:1;padding:.75rem;text-align:center;cursor:pointer;color:#666;font-weight:500;border-bottom:2px solid transparent}
+.caixa{background:white;padding:2rem;border-radius:.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);width:100%;max-width:400px}
+h1{color:#1565c0;text-align:center;margin-bottom:1.5rem}
+.abas{display:flex;margin-bottom:1.5rem;border-bottom:1px solid #ddd}
+.aba{flex:1;padding:.75rem;text-align:center;cursor:pointer;color:#666;border-bottom:2px solid transparent}
 .aba.ativa{color:#1565c0;border-bottom-color:#1565c0}
-.form{display:none}
-.form.ativo{display:block}
-.campo{margin-bottom:1rem}
-label{display:block;margin-bottom:.3rem;color:#333;font-size:.9rem}
-input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem;font-size:1rem}
-.btn{width:100%;padding:.75rem;border:none;border-radius:.375rem;background:#1565c0;color:white;font-size:1rem;cursor:pointer;transition:.2s;margin-top:.5rem}
-.btn:hover{background:#0d47a1}
-.mensagem{margin-top:1rem;text-align:center;font-size:.9rem;display:none}
-.erro{color:#c62828}
-.sucesso{color:#2e7d32}
-.aviso-master{background:#e3f2fd;padding:.75rem;border-radius:.375rem;margin-bottom:1rem;font-size:.85rem;color:#1565c0;display:none}
+.grupo{margin-bottom:1rem}
+label{display:block;margin-bottom:.3rem;color:#333}
+input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
+.botao{width:100%;padding:.75rem;background:#1565c0;color:white;border:none;border-radius:.375rem;font-size:1rem;cursor:pointer;margin-top:.5rem}
+.botao:hover{background:#0d47a1}
+.oculto{display:none}
+.mensagem{margin-top:1rem;text-align:center;font-size:.9rem;color:#c62828}
 </style>
 </head>
 <body>
 
-<div class="caixa-acesso">
+<div class="caixa">
     <h1>Financo</h1>
 
     <div class="abas">
-        <div class="aba ativa" onclick="mostrarAba('login')">Entrar</div>
-        <div class="aba" onclick="mostrarAba('cadastro')">Cadastrar</div>
+        <div class="aba ativa" onclick="mostrarLogin()">Entrar</div>
+        <div class="aba" onclick="mostrarCadastro()">Cadastrar</div>
     </div>
 
-    <div class="form ativo" id="formLogin">
-        <div class="aviso-master" id="avisoMaster">✅ Conta Master detectada: acesso total liberado!</div>
-        <div class="campo">
+    <!-- TELA LOGIN -->
+    <div id="areaLogin">
+        <div class="grupo">
             <label>E-mail</label>
-            <input type="email" id="emailLogin" required>
+            <input type="email" id="emailLogin">
         </div>
-        <div class="campo">
+        <div class="grupo">
             <label>Senha</label>
-            <input type="password" id="senhaLogin" required>
+            <input type="password" id="senhaLogin">
         </div>
-        <button class="btn" onclick="fazerLogin()">Entrar</button>
-        <div class="mensagem erro" id="msgLogin"></div>
+        <button class="botao" onclick="entrar()">Entrar</button>
+        <div class="mensagem" id="msgLogin"></div>
     </div>
 
-    <div class="form" id="formCadastro">
-        <div class="campo">
+    <!-- TELA CADASTRO -->
+    <div id="areaCadastro" class="oculto">
+        <div class="grupo">
             <label>Nome Completo</label>
-            <input type="text" id="nomeCadastro" required>
+            <input type="text" id="nomeCad">
         </div>
-        <div class="campo">
+        <div class="grupo">
             <label>E-mail</label>
-            <input type="email" id="emailCadastro" required>
+            <input type="email" id="emailCad">
         </div>
-        <div class="campo">
+        <div class="grupo">
             <label>Senha</label>
-            <input type="password" id="senhaCadastro" required>
+            <input type="password" id="senhaCad">
         </div>
-        <button class="btn" onclick="fazerCadastro()">Criar Conta</button>
-        <div class="mensagem" id="msgCadastro"></div>
+        <button class="botao" onclick="cadastrar()">Criar Conta</button>
+        <div class="mensagem" id="msgCad"></div>
     </div>
 </div>
 
@@ -74,85 +71,60 @@ const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
-// Se já estiver logado, pula direto
-if (localStorage.getItem('usuarioLogado')) {
-    window.location.href = 'empresas.html';
+// Se já logado, vai direto
+if(localStorage.getItem('usuarioLogado')) window.location.href='empresas.html';
+
+// MOSTRA LOGIN
+function mostrarLogin(){
+    document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
+    document.querySelectorAll('.aba')[0].classList.add('ativa');
+    document.getElementById('areaLogin').classList.remove('oculto');
+    document.getElementById('areaCadastro').classList.add('oculto');
 }
 
-function mostrarAba(tipo){
-    document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
-    document.querySelectorAll('.form').forEach(f => f.classList.remove('ativa'));
-    event.target.classList.add('ativa');
-    document.getElementById(`form${tipo==='login'?'Login':'Cadastro'}`).classList.add('ativa');
-    document.getElementById('msgLogin').style.display = 'none';
-    document.getElementById('msgCadastro').style.display = 'none';
-    document.getElementById('avisoMaster').style.display = 'none';
+// MOSTRA CADASTRO
+function mostrarCadastro(){
+    document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
+    document.querySelectorAll('.aba')[1].classList.add('ativa');
+    document.getElementById('areaLogin').classList.add('oculto');
+    document.getElementById('areaCadastro').classList.remove('oculto');
 }
 
-async function fazerLogin(){
+// FAZ LOGIN
+async function entrar(){
     const email = document.getElementById('emailLogin').value.trim();
-    const senha = document.getElementById('senhaLogin').value;
+    const senha = document.getElementById('senhaLogin').value.trim();
     const msg = document.getElementById('msgLogin');
-    const avisoMaster = document.getElementById('avisoMaster');
 
-    if(!email || !senha){
-        msg.textContent = 'Preencha e-mail e senha!';
-        msg.className = 'mensagem erro';
-        msg.style.display = 'block';
-        return;
-    }
+    if(!email || !senha){msg.textContent='Preencha todos os campos!';return}
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const {data,error} = await supabase.auth.signInWithPassword({email,password:senha});
+    if(error){msg.textContent=error.message;return}
 
-    if(error){
-        msg.textContent = 'Erro: ' + error.message;
-        msg.className = 'mensagem erro';
-        msg.style.display = 'block';
-        return;
-    }
-
-    const nivel = email === EMAIL_MASTER ? 'master' : 'usuario';
+    const nivel = email.toLowerCase()===EMAIL_MASTER.toLowerCase()?'master':'usuario';
     localStorage.setItem('usuarioLogado', data.user.id);
     localStorage.setItem('nivelUsuario', nivel);
-
-    if(nivel === 'master'){
-        avisoMaster.style.display = 'block';
-        setTimeout(() => window.location.href = 'empresas.html', 1500);
-    } else {
-        window.location.href = 'empresas.html';
-    }
+    window.location.href='empresas.html';
 }
 
-async function fazerCadastro(){
-    const nome = document.getElementById('nomeCadastro').value.trim();
-    const email = document.getElementById('emailCadastro').value.trim();
-    const senha = document.getElementById('senhaCadastro').value;
-    const msg = document.getElementById('msgCadastro');
+// FAZ CADASTRO
+async function cadastrar(){
+    const nome = document.getElementById('nomeCad').value.trim();
+    const email = document.getElementById('emailCad').value.trim();
+    const senha = document.getElementById('senhaCad').value.trim();
+    const msg = document.getElementById('msgCad');
 
-    if(nome.length < 3 || senha.length < 6){
-        msg.textContent = 'Nome mínimo 3 caracteres, senha mínimo 6!';
-        msg.className = 'mensagem erro';
-        msg.style.display = 'block';
-        return;
-    }
+    if(nome.length<3){msg.textContent='Nome com pelo menos 3 letras!';return}
+    if(senha.length<6){msg.textContent='Senha com pelo menos 6 caracteres!';return}
 
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: senha,
-        options: { data: { nome: nome, nivel: email === EMAIL_MASTER ? 'master' : 'usuario' } }
+    const {data,error} = await supabase.auth.signUp({
+        email:email, password:senha,
+        options:{data:{nome:nome}}
     });
+    if(error){msg.textContent=error.message;return}
 
-    if(error){
-        msg.textContent = 'Erro: ' + error.message;
-        msg.className = 'mensagem erro';
-        msg.style.display = 'block';
-        return;
-    }
-
-    msg.textContent = 'Conta criada! Faça login agora.';
-    msg.className = 'mensagem sucesso';
-    msg.style.display = 'block';
-    setTimeout(() => mostrarAba('login'), 2000);
+    msg.textContent='Conta criada! Faça login.';
+    setTimeout(mostrarLogin,2000);
 }
 </script>
 
