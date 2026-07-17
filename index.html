@@ -67,20 +67,19 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
 </div>
 
 <script>
-// DADOS DO SEU PROJETO — use a chave pública completa do Supabase
+// DADOS DO SEU PROJETO
 const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-const SUPABASE_CHAVE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwYWhyaXd3Zml0bmRkbGhuZW5neiIsInJvbCI6ImludGVybmFsIiwiZXhwIjoyMDUxNDk2MDAwLCJzdWIiOiJwdWJsaWMtYWNjZXNzLWtleSJ9.7yY0XzZbLbXKdGdFzXzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4';
+// COPIE A CHAVE PÚBLICA DO SEU SUPABASE AQUI (ela começa com eyJ...)
+const SUPABASE_CHAVE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwYWhyaXd3Zml0bmRkbGhuZW5neiIsInJvbCI6ImludGVybmFsIiwiZXhwIjoyMDUxNDk2MDAwLCJzdWIiOiJwdWJsaWMtYWNjZXNzLWtleSJ9.7yY0XzZbLbXKdGdFzXzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4';
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
-// INICIALIZA O SUPABASE DEPOIS QUE O SCRIPT CARREGA COMPLETAMENTE
-let supabase;
-document.addEventListener('DOMContentLoaded', () => {
-    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-    // Se já logado, vai direto
-    if(localStorage.getItem('usuarioLogado')) {
-        window.location.href='empresas.html';
-    }
-});
+// INICIALIZA DIRETO — SEM ATRASOS
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+
+// Se já logado, vai direto
+if(localStorage.getItem('usuarioLogado')) {
+    window.location.href='empresas.html';
+}
 
 function mostrarLogin(){
     document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
@@ -105,11 +104,6 @@ async function entrar(){
     const btn = document.getElementById('btnLogin');
     msg.className = 'mensagem erro';
 
-    if(!supabase){
-        msg.textContent='Aguarde o sistema carregar e tente novamente!';
-        msg.style.display='block';
-        return;
-    }
     if(!email || !senha){msg.textContent='Preencha e-mail e senha!';msg.style.display='block';return}
 
     btn.disabled = true;
@@ -141,11 +135,6 @@ async function cadastrar(){
     const btn = document.getElementById('btnCad');
     msg.className = 'mensagem erro';
 
-    if(!supabase){
-        msg.textContent='Aguarde o sistema carregar e tente novamente!';
-        msg.style.display='block';
-        return;
-    }
     if(nome.length<3){msg.textContent='Nome com pelo menos 3 letras!';msg.style.display='block';return}
     if(senha.length<6){msg.textContent='Senha com pelo menos 6 caracteres!';msg.style.display='block';return}
 
