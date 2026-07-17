@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financo - Acesso</title>
-<!-- Usando a versão mais recente que aceita o novo formato de chave -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
@@ -38,7 +37,7 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
     </div>
 
     <div id="areaLogin">
-        <div class="aviso-master" id="avisoMaster">✅ Conta Master: acesso total liberado!</div>
+        <div class="aviso-master" id="avisoMaster">✅ Conta Master: acessando painel...</div>
         <div class="grupo">
             <label>E-mail</label>
             <input type="email" id="emailLogin" placeholder="seu@email.com">
@@ -71,15 +70,14 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
 
 <script>
 const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-// ✅ A CHAVE EXATA QUE VOCÊ TEM, JÁ INSERIDA
 const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
-// Inicialização compatível com o novo formato
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
+// ✅ JÁ LOGADO: VAI PARA INICIO.HTML
 if(localStorage.getItem('usuarioLogado')) {
-    window.location.href = 'empresas.html';
+    window.location.href = 'inicio.html';
 }
 
 function mostrarLogin(){
@@ -126,10 +124,12 @@ async function entrar(){
         localStorage.setItem('usuarioLogado', data.user.id);
         localStorage.setItem('nivelUsuario', nivel);
 
+        // ✅ REDIRECIONAMENTO CORRIGIDO:
         if(nivel === 'master'){
             avisoMaster.style.display = 'block';
-            setTimeout(() => window.location.href = 'inicio.html', 1800);
+            setTimeout(() => window.location.href = 'painel-master.html', 1800);
         } else {
+            // Usuário comum vai para o inicio.html que já existe!
             window.location.href = 'inicio.html';
         }
     } catch (erro) {
@@ -167,7 +167,10 @@ async function cadastrar(){
         const {data, error} = await supabase.auth.signUp({
             email: email,
             password: senha,
-            options: { data: { nome: nome }, emailRedirectTo: window.location.origin }
+            options: { 
+                data: { nome: nome },
+                emailRedirectTo: 'https://hibrity.github.io/financo/inicio.html'
+            }
         });
         if(error) throw error;
 
