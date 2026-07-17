@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Financo - Gráficos</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
     <style>
         * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
         html { font-size: 16px; }
@@ -19,6 +20,7 @@
         .btn.primario:hover { background: #0d47a1; }
 
         .aviso-vazio { background: white; padding: 2rem; border-radius: 0.5rem; text-align: center; color: #666; font-size: 1rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .carregando { color: #1565c0; font-weight: 500; }
 
         .container-grafico { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem; }
         .titulo-grafico { color: #1565c0; font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
@@ -54,34 +56,59 @@
         <button class="btn primario" onclick="baixarPDF()">📄 Baixar em PDF</button>
     </div>
 
-    <div id="conteudoGrafico"></div>
+    <div id="conteudoGrafico" class="aviso-vazio carregando">
+        <p>Carregando dados...</p>
+    </div>
 
     <script>
-        function carregarDadosEGrafico() {
+        const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
+        const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
+        const TABELA = 'financo_dados';
+        let supabase = null;
+
+        async function carregarDadosEGrafico() {
             const conteudo = document.getElementById('conteudoGrafico');
-            const dados = localStorage.getItem('financoPastaSalvos');
+            let listaSalvos = [];
 
-            if (!dados) {
+            try {
+                // Inicializa conexão
+                supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+
+                // 1. Busca PRIMEIRO da NUVEM
+                const { data, error } = await supabase
+                    .from(TABELA)
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                if (!error && data && data.length > 0) {
+                    listaSalvos = data.map(item => ({
+                        lancamentos: [
+                            ...(item.itens_venda || []).map(v => ({ ...v, tipo: 'venda' })),
+                            ...(item.itens_despesa || []).map(d => ({ ...d, tipo: 'despesa' }))
+                        ]
+                    }));
+                } else {
+                    // 2. Se não tiver na nuvem, verifica o local
+                    const dadosLocal = localStorage.getItem('financoPastaSalvos');
+                    if (dadosLocal) listaSalvos = JSON.parse(dadosLocal);
+                }
+            } catch (erro) {
+                console.warn('Erro na nuvem, usando local:', erro);
+                const dadosLocal = localStorage.getItem('financoPastaSalvos');
+                if (dadosLocal) listaSalvos = JSON.parse(dadosLocal);
+            }
+
+            if (!listaSalvos || listaSalvos.length === 0) {
                 conteudo.innerHTML = `
                     <div class="aviso-vazio">
                         <p>Nenhum lançamento salvo ainda para gerar gráficos!</p>
-                        <p style="margin-top: 0.5rem;">Salve seus lançamentos na página "Salvar e Exportar" para visualizar aqui.</p>
+                        <p style="margin-top: 0.5rem;">Salve seus lançamentos na página principal para visualizar aqui.</p>
                     </div>
                 `;
                 return;
             }
 
-            const listaSalvos = JSON.parse(dados);
-            if (listaSalvos.length === 0) {
-                conteudo.innerHTML = `
-                    <div class="aviso-vazio">
-                        <p>Nenhum lançamento salvo ainda para gerar gráficos!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Processa dados para todos os gráficos
+            // --- Processa os dados ---
             const labels = [];
             const valoresVendas = [];
             const valoresDespesas = [];
@@ -92,9 +119,12 @@
             listaSalvos.forEach((registro, indice) => {
                 labels.push(`Registro ${listaSalvos.length - indice}`);
                 let v = 0, d = 0;
-                registro.lancamentos.forEach(l => {
-                    l.tipo === 'venda' ? v += l.valor : d += l.valor;
-                });
+                if (registro.lancamentos) {
+                    registro.lancamentos.forEach(l => {
+                        if (l.tipo === 'venda') v += parseFloat(l.valor) || 0;
+                        else d += parseFloat(l.valor) || 0;
+                    });
+                }
                 valoresVendas.push(v);
                 valoresDespesas.push(d);
                 valoresSaldo.push(v - d);
@@ -105,28 +135,19 @@
             const saldoGeral = totalGeralVendas - totalGeralDespesas;
 
             conteudo.innerHTML = `
-                <!-- Gráfico de Barras -->
                 <div class="container-grafico">
                     <h3 class="titulo-grafico">Comparativo: Vendas x Despesas por Registro</h3>
-                    <div class="grafico-wrapper">
-                        <canvas id="graficoBarras"></canvas>
-                    </div>
+                    <div class="grafico-wrapper"><canvas id="graficoBarras"></canvas></div>
                 </div>
 
-                <!-- Gráfico de Linhas -->
                 <div class="container-grafico">
                     <h3 class="titulo-grafico">Evolução do Saldo por Registro</h3>
-                    <div class="grafico-wrapper">
-                        <canvas id="graficoLinhas"></canvas>
-                    </div>
+                    <div class="grafico-wrapper"><canvas id="graficoLinhas"></canvas></div>
                 </div>
 
-                <!-- Gráfico de Rosca -->
                 <div class="container-grafico">
                     <h3 class="titulo-grafico">Distribuição Total: Entradas vs Saídas</h3>
-                    <div class="grafico-wrapper">
-                        <canvas id="graficoPizza"></canvas>
-                    </div>
+                    <div class="grafico-wrapper"><canvas id="graficoPizza"></canvas></div>
                 </div>
 
                 <div class="resumo">
@@ -145,89 +166,44 @@
                 </div>
             `;
 
-            // 1. Gráfico de Barras
+            // --- Gráficos ---
             new Chart(document.getElementById('graficoBarras'), {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'Vendas / Entradas',
-                            data: valoresVendas,
-                            backgroundColor: '#2e7d32',
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Despesas / Saídas',
-                            data: valoresDespesas,
-                            backgroundColor: '#c62828',
-                            borderRadius: 4
-                        }
+                        { label: 'Vendas / Entradas', data: valoresVendas, backgroundColor: '#2e7d32', borderRadius: 4 },
+                        { label: 'Despesas / Saídas', data: valoresDespesas, backgroundColor: '#c62828', borderRadius: 4 }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } }
-                    }
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } } }
                 }
             });
 
-            // 2. Gráfico de Linhas
             new Chart(document.getElementById('graficoLinhas'), {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Saldo Líquido',
-                        data: valoresSaldo,
-                        borderColor: '#1565c0',
-                        backgroundColor: 'rgba(21, 101, 192, 0.15)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 5,
-                        pointBackgroundColor: '#1565c0'
-                    }]
+                    datasets: [{ label: 'Saldo Líquido', data: valoresSaldo, borderColor: '#1565c0', backgroundColor: 'rgba(21, 101, 192, 0.15)', fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: '#1565c0' }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        y: { 
-                            ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') },
-                            grid: { color: 'rgba(0,0,0,0.05)' }
-                        }
-                    }
+                    scales: { y: { ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } } }
                 }
             });
 
-            // 3. Gráfico de Rosca
             new Chart(document.getElementById('graficoPizza'), {
                 type: 'doughnut',
-                data: {
-                    labels: ['Vendas', 'Despesas'],
-                    datasets: [{
-                        data: [totalGeralVendas, totalGeralDespesas],
-                        backgroundColor: ['#2e7d32', '#c62828'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
+                data: { labels: ['Vendas', 'Despesas'], datasets: [{ data: [totalGeralVendas, totalGeralDespesas], backgroundColor: ['#2e7d32', '#c62828'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
         }
 
-        // Função para baixar em PDF
-        function baixarPDF() {
-            window.print();
-        }
-
+        function baixarPDF() { window.print(); }
         window.onload = carregarDadosEGrafico;
     </script>
 </body>
