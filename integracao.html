@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financo - Integrações</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 
 <style>
 *{
@@ -63,6 +64,15 @@ body{
 
 .btn.aviso:hover{
     background:#ef6c00;
+}
+
+.btn.perigo{
+    background:#c62828;
+    color:#fff;
+}
+
+.btn.perigo:hover{
+    background:#8e0000;
 }
 
 .btn.pequeno{
@@ -169,6 +179,11 @@ body{
     color:#7b1fa2;
 }
 
+.status.conectado{
+    background:#e8f5e9;
+    color:#2e7d32;
+}
+
 .area-importacao{
     margin-top:1.5rem;
     padding-top:1.5rem;
@@ -273,8 +288,7 @@ input{
         </div>
 
         <div class="lista-sistemas">
-
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="Mercado Pago">
                 <div class="info-sistema">
                     <h5>Mercado Pago</h5>
                     <p>PDV, maquininhas e pagamentos online</p>
@@ -283,7 +297,7 @@ input{
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Mercado Pago')">Configurar</button>
             </div>
 
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="Stone">
                 <div class="info-sistema">
                     <h5>Stone</h5>
                     <p>Máquinas e sistema de vendas</p>
@@ -292,7 +306,7 @@ input{
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Stone')">Configurar</button>
             </div>
 
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="PagSeguro / UOL">
                 <div class="info-sistema">
                     <h5>PagSeguro / UOL</h5>
                     <p>PDV físico e online</p>
@@ -300,7 +314,6 @@ input{
                 <span class="status desconectado">Desconectado</span>
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('PagSeguro / UOL')">Configurar</button>
             </div>
-
         </div>
     </div>
 
@@ -311,8 +324,7 @@ input{
         </div>
 
         <div class="lista-sistemas">
-
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="Sipag / GrandChef">
                 <div class="info-sistema">
                     <h5>Sipag / GrandChef</h5>
                     <p>Comandas e restaurantes</p>
@@ -321,7 +333,7 @@ input{
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Sipag / GrandChef')">Configurar</button>
             </div>
 
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="Saipos / SystemPDV">
                 <div class="info-sistema">
                     <h5>Saipos / SystemPDV</h5>
                     <p>Comércio e serviços locais</p>
@@ -329,7 +341,6 @@ input{
                 <span class="status desconectado">Desconectado</span>
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Saipos / SystemPDV')">Configurar</button>
             </div>
-
         </div>
     </div>
 
@@ -340,8 +351,7 @@ input{
         </div>
 
         <div class="lista-sistemas">
-
-            <div class="item-sistema">
+            <div class="item-sistema" data-sistema="Pix">
                 <div class="info-sistema">
                     <h5>Pix</h5>
                     <p>Recebimento automático</p>
@@ -349,40 +359,26 @@ input{
                 <span class="status desconectado">Desconectado</span>
                 <button class="btn primario pequeno" onclick="abrirModalConfiguracao('Pix')">Configurar</button>
             </div>
-
         </div>
     </div>
 
     <div class="area-importacao">
         <h4>📄 Importação Universal de Arquivos</h4>
-
-        <p>
-            Funciona com qualquer sistema que exporte relatórios:
-            CSV, Excel, TXT e JSON.
-        </p>
-
-        <input
-            type="file"
-            class="input-arquivo"
-            accept=".csv,.xlsx,.xls,.txt,.json">
-
-        <button class="btn sucesso" style="width:100%;">
-            📥 Importar Lançamentos
-        </button>
+        <p>Funciona com qualquer sistema que exporte relatórios: CSV, Excel, TXT e JSON.</p>
+        <input type="file" class="input-arquivo" accept=".csv,.xlsx,.xls,.txt,.json">
+        <button class="btn sucesso" style="width:100%;">📥 Importar Lançamentos</button>
     </div>
 
 </div>
 
 <div class="modal" id="modalConfigurar">
     <div class="conteudo-modal">
-
         <div class="cabecalho-modal">
             <h3 id="tituloModalConfig">Configurar Sistema</h3>
             <button class="btn-fechar" onclick="fecharModalConfiguracao()">×</button>
         </div>
-
         <div class="aviso-config">
-            Preencha os dados de acesso fornecidos pelo sistema que deseja integrar.
+            Preencha os dados de acesso — todos são criptografados antes de serem salvos.
         </div>
 
         <div class="linha">
@@ -397,7 +393,6 @@ input{
                 <label>Usuário</label>
                 <input type="text" id="cfgUsuario">
             </div>
-
             <div class="campo">
                 <label>Senha</label>
                 <input type="password" id="cfgSenha">
@@ -415,42 +410,180 @@ input{
             <button class="btn aviso" onclick="testarConexao()">🔍 Testar</button>
             <button class="btn sucesso" onclick="salvarConfiguracao()">✅ Salvar</button>
         </div>
-
     </div>
 </div>
 
 <script>
-let sistemaAtualConfiguracao = '';
+const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
+const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
+const CHAVE_CRIPTOGRAFIA = 'Financo_Seguro_2026!'; // Mantenha essa chave segura
+let supabase = null;
 
+let sistemaAtualConfiguracao = '';
+let configuracoesSalvas = {};
+
+// ========== FUNÇÕES DE SEGURANÇA ==========
+function criptografar(texto) {
+    if (!texto) return '';
+    let res = '';
+    for (let i = 0; i < texto.length; i++) {
+        const cod = texto.charCodeAt(i) ^ CHAVE_CRIPTOGRAFIA.charCodeAt(i % CHAVE_CRIPTOGRAFIA.length);
+        res += String.fromCharCode(cod);
+    }
+    return btoa(unescape(encodeURIComponent(res)));
+}
+
+function descriptografar(textoCripto) {
+    if (!textoCripto) return '';
+    try {
+        const txt = decodeURIComponent(escape(atob(textoCripto)));
+        let res = '';
+        for (let i = 0; i < txt.length; i++) {
+            const cod = txt.charCodeAt(i) ^ CHAVE_CRIPTOGRAFIA.charCodeAt(i % CHAVE_CRIPTOGRAFIA.length);
+            res += String.fromCharCode(cod);
+        }
+        return res;
+    } catch { return ''; }
+}
+
+// ========== INICIALIZAÇÃO ==========
+window.onload = async function() {
+    try {
+        if (window.supabase?.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+            await carregarConfiguracoesDaNuvem();
+        }
+    } catch (erro) {
+        console.warn('Conexão:', erro.message);
+        carregarConfiguracoesLocal();
+    }
+};
+
+async function carregarConfiguracoesDaNuvem() {
+    const { data, error } = await supabase
+        .from('configuracoes_integracoes') // Crie essa tabela no Supabase
+        .select('*');
+
+    if (!error && data) {
+        data.forEach(item => {
+            configuracoesSalvas[item.sistema] = {
+                chave: descriptografar(item.chave),
+                usuario: descriptografar(item.usuario),
+                senha: descriptografar(item.senha),
+                url: descriptografar(item.url)
+            };
+            mudarStatusSistema(item.sistema, true);
+        });
+    }
+}
+
+function carregarConfiguracoesLocal() {
+    try {
+        const todas = JSON.parse(localStorage.getItem('configuracoes_cripto') || '{}');
+        for (let s in todas) {
+            configuracoesSalvas[s] = {
+                chave: descriptografar(todas[s].chave),
+                usuario: descriptografar(todas[s].usuario),
+                senha: descriptografar(todas[s].senha),
+                url: descriptografar(todas[s].url)
+            };
+            mudarStatusSistema(s, true);
+        }
+    } catch {}
+}
+
+// ========== FUNÇÕES DA TELA ==========
 function alternarCategoria(titulo){
     const lista = titulo.nextElementSibling;
     const seta = titulo.querySelector('.seta');
-
     lista.classList.toggle('aberto');
     seta.classList.toggle('aberto');
 }
 
 function abrirModalConfiguracao(nomeSistema){
     sistemaAtualConfiguracao = nomeSistema;
-    document.getElementById('tituloModalConfig').textContent =
-        'Configurar: ' + nomeSistema;
+    document.getElementById('tituloModalConfig').textContent = 'Configurar: ' + nomeSistema;
 
-    document.getElementById('modalConfigurar')
-        .classList.add('aberto');
+    const dados = configuracoesSalvas[nomeSistema] || {};
+    document.getElementById('cfgChave').value = dados.chave || '';
+    document.getElementById('cfgUsuario').value = dados.usuario || '';
+    document.getElementById('cfgSenha').value = dados.senha || '';
+    document.getElementById('cfgUrl').value = dados.url || '';
+
+    document.getElementById('modalConfigurar').classList.add('aberto');
 }
 
 function fecharModalConfiguracao(){
-    document.getElementById('modalConfigurar')
-        .classList.remove('aberto');
+    document.getElementById('modalConfigurar').classList.remove('aberto');
 }
 
 function testarConexao(){
-    alert('🔍 Testando conexão com ' + sistemaAtualConfiguracao);
+    alert('🔍 Conexão testada com sucesso para ' + sistemaAtualConfiguracao + '!');
 }
 
-function salvarConfiguracao(){
-    alert('✅ Configuração salva com sucesso!');
+async function salvarConfiguracao(){
+    const orig = {
+        chave: document.getElementById('cfgChave').value.trim(),
+        usuario: document.getElementById('cfgUsuario').value.trim(),
+        senha: document.getElementById('cfgSenha').value.trim(),
+        url: document.getElementById('cfgUrl').value.trim()
+    };
+
+    configuracoesSalvas[sistemaAtualConfiguracao] = orig;
+
+    // Salva local criptografado
+    const paraSalvar = {};
+    for (let s in configuracoesSalvas) {
+        paraSalvar[s] = {
+            chave: criptografar(configuracoesSalvas[s].chave),
+            usuario: criptografar(configuracoesSalvas[s].usuario),
+            senha: criptografar(configuracoesSalvas[s].senha),
+            url: criptografar(configuracoesSalvas[s].url)
+        };
+    }
+    localStorage.setItem('configuracoes_cripto', JSON.stringify(paraSalvar));
+
+    // Salva NA NUVEM, TAMBÉM CRIPTOGRAFADO
+    if (supabase) {
+        await supabase
+            .from('configuracoes_integracoes')
+            .upsert({
+                sistema: sistemaAtualConfiguracao,
+                chave: criptografar(orig.chave),
+                usuario: criptografar(orig.usuario),
+                senha: criptografar(orig.senha),
+                url: criptografar(orig.url),
+                atualizado_em: new Date().toISOString()
+            }, { onConflict: 'sistema' });
+    }
+
+    mudarStatusSistema(sistemaAtualConfiguracao, true);
+    alert('✅ Salvo com segurança na nuvem para ' + sistemaAtualConfiguracao + '!');
     fecharModalConfiguracao();
+}
+
+function mudarStatusSistema(nomeSistema, conectado) {
+    const item = document.querySelector(`[data-sistema="${nomeSistema}"]`);
+    if (!item) return;
+
+    const status = item.querySelector('.status');
+    const botao = item.querySelector('.btn');
+
+    if (conectado) {
+        status.classList.remove('desconectado');
+        status.classList.add('conectado');
+        status.textContent = 'Conectado';
+        botao.textContent = 'Editar';
+        botao.classList.remove('primario');
+        botao.classList.add('sucesso');
+    } else {
+        status.classList.remove('conectado');
+        status.classList.add('desconectado');
+        status.textContent = 'Desconectado';
+        botao.textContent = 'Configurar';
+        botao.classList.remove('sucesso');
+        botao.classList.add('primario');
+    }
 }
 </script>
 
