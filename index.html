@@ -17,9 +17,12 @@ h1{color:#1565c0;text-align:center;margin-bottom:1.5rem}
 label{display:block;margin-bottom:.3rem;color:#333}
 input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
 .botao{width:100%;padding:.75rem;background:#1565c0;color:white;border:none;border-radius:.375rem;font-size:1rem;cursor:pointer;margin-top:.5rem}
-.botao:hover{background:#0d47a1}
+.botao:disabled{background:#90caf9;cursor:not-allowed}
+.botao:hover:not(:disabled){background:#0d47a1}
 .oculto{display:none}
-.mensagem{margin-top:1rem;text-align:center;font-size:.9rem;color:#c62828}
+.mensagem{margin-top:1rem;text-align:center;font-size:.9rem;padding:.5rem;border-radius:.375rem}
+.erro{color:#c62828;background:#ffebee}
+.sucesso{color:#2e7d32;background:#e8f5e9}
 </style>
 </head>
 <body>
@@ -32,7 +35,6 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
         <div class="aba" onclick="mostrarCadastro()">Cadastrar</div>
     </div>
 
-    <!-- TELA LOGIN -->
     <div id="areaLogin">
         <div class="grupo">
             <label>E-mail</label>
@@ -42,11 +44,10 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
             <label>Senha</label>
             <input type="password" id="senhaLogin">
         </div>
-        <button class="botao" onclick="entrar()">Entrar</button>
+        <button class="botao" id="btnLogin" onclick="entrar()">Entrar</button>
         <div class="mensagem" id="msgLogin"></div>
     </div>
 
-    <!-- TELA CADASTRO -->
     <div id="areaCadastro" class="oculto">
         <div class="grupo">
             <label>Nome Completo</label>
@@ -57,74 +58,108 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
             <input type="email" id="emailCad">
         </div>
         <div class="grupo">
-            <label>Senha</label>
+            <label>Senha (mínimo 6 caracteres)</label>
             <input type="password" id="senhaCad">
         </div>
-        <button class="botao" onclick="cadastrar()">Criar Conta</button>
+        <button class="botao" id="btnCad" onclick="cadastrar()">Criar Conta</button>
         <div class="mensagem" id="msgCad"></div>
     </div>
 </div>
 
 <script>
+// DADOS CORRETOS DO SEU PROJETO
 const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
+// COLOQUE A CHAVE PÚBLICA COMPLETA AQUI (ela começa com eyJ...)
+const SUPABASE_CHAVE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwYWhyaXd3Zml0bmRkbGhuZW5neiIsInJvbCI6ImludGVybmFsIiwiZXhwIjoxNjk5OTk5OTk5LCJzdWIiOiJwdWJsaWMtYWNjZXNzLWtleSJ9.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
 // Se já logado, vai direto
 if(localStorage.getItem('usuarioLogado')) window.location.href='empresas.html';
 
-// MOSTRA LOGIN
 function mostrarLogin(){
     document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
     document.querySelectorAll('.aba')[0].classList.add('ativa');
     document.getElementById('areaLogin').classList.remove('oculto');
     document.getElementById('areaCadastro').classList.add('oculto');
+    document.getElementById('msgLogin').style.display='none';
 }
 
-// MOSTRA CADASTRO
 function mostrarCadastro(){
     document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa'));
     document.querySelectorAll('.aba')[1].classList.add('ativa');
     document.getElementById('areaLogin').classList.add('oculto');
     document.getElementById('areaCadastro').classList.remove('oculto');
+    document.getElementById('msgCad').style.display='none';
 }
 
-// FAZ LOGIN
 async function entrar(){
     const email = document.getElementById('emailLogin').value.trim();
     const senha = document.getElementById('senhaLogin').value.trim();
     const msg = document.getElementById('msgLogin');
+    const btn = document.getElementById('btnLogin');
+    msg.className = 'mensagem erro';
 
-    if(!email || !senha){msg.textContent='Preencha todos os campos!';return}
+    if(!email || !senha){msg.textContent='Preencha e-mail e senha!';msg.style.display='block';return}
 
-    const {data,error} = await supabase.auth.signInWithPassword({email,password:senha});
-    if(error){msg.textContent=error.message;return}
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+    msg.style.display='none';
 
-    const nivel = email.toLowerCase()===EMAIL_MASTER.toLowerCase()?'master':'usuario';
-    localStorage.setItem('usuarioLogado', data.user.id);
-    localStorage.setItem('nivelUsuario', nivel);
-    window.location.href='empresas.html';
+    try {
+        const {data,error} = await supabase.auth.signInWithPassword({email,password:senha});
+        if(error) throw error;
+
+        const nivel = email.toLowerCase()===EMAIL_MASTER.toLowerCase()?'master':'usuario';
+        localStorage.setItem('usuarioLogado', data.user.id);
+        localStorage.setItem('nivelUsuario', nivel);
+        window.location.href='empresas.html';
+    } catch (erro) {
+        msg.textContent = 'Erro: ' + erro.message;
+        msg.style.display='block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+    }
 }
 
-// FAZ CADASTRO
 async function cadastrar(){
     const nome = document.getElementById('nomeCad').value.trim();
     const email = document.getElementById('emailCad').value.trim();
     const senha = document.getElementById('senhaCad').value.trim();
     const msg = document.getElementById('msgCad');
+    const btn = document.getElementById('btnCad');
+    msg.className = 'mensagem erro';
 
-    if(nome.length<3){msg.textContent='Nome com pelo menos 3 letras!';return}
-    if(senha.length<6){msg.textContent='Senha com pelo menos 6 caracteres!';return}
+    if(nome.length<3){msg.textContent='Nome com pelo menos 3 letras!';msg.style.display='block';return}
+    if(senha.length<6){msg.textContent='Senha com pelo menos 6 caracteres!';msg.style.display='block';return}
 
-    const {data,error} = await supabase.auth.signUp({
-        email:email, password:senha,
-        options:{data:{nome:nome}}
-    });
-    if(error){msg.textContent=error.message;return}
+    btn.disabled = true;
+    btn.textContent = 'Cadastrando...';
+    msg.style.display='none';
 
-    msg.textContent='Conta criada! Faça login.';
-    setTimeout(mostrarLogin,2000);
+    try {
+        const {data,error} = await supabase.auth.signUp({
+            email:email,
+            password:senha,
+            options:{
+                data:{nome:nome},
+                emailRedirectTo: window.location.origin
+            }
+        });
+        if(error) throw error;
+
+        msg.className = 'mensagem sucesso';
+        msg.textContent = 'Conta criada! Verifique seu e-mail ou faça login.';
+        msg.style.display='block';
+        setTimeout(mostrarLogin, 2500);
+    } catch (erro) {
+        msg.textContent = 'Erro: ' + erro.message;
+        msg.style.display='block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Criar Conta';
+    }
 }
 </script>
 
