@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Financo</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<title>Financo - Acesso</title>
+<!-- Usando a versão mais recente que aceita o novo formato de chave -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
 body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5;padding:1rem}
@@ -23,6 +24,7 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
 .mensagem{margin-top:1rem;text-align:center;font-size:.9rem;padding:.5rem;border-radius:.375rem;display:none}
 .erro{color:#c62828;background:#ffebee}
 .sucesso{color:#2e7d32;background:#e8f5e9}
+.aviso-master{background:#e3f2fd;padding:.75rem;border-radius:.375rem;margin-bottom:1rem;color:#1565c0;display:none;text-align:center}
 </style>
 </head>
 <body>
@@ -36,49 +38,48 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem}
     </div>
 
     <div id="areaLogin">
+        <div class="aviso-master" id="avisoMaster">✅ Conta Master: acesso total liberado!</div>
         <div class="grupo">
             <label>E-mail</label>
-            <input type="email" id="emailLogin">
+            <input type="email" id="emailLogin" placeholder="seu@email.com">
         </div>
         <div class="grupo">
             <label>Senha</label>
-            <input type="password" id="senhaLogin">
+            <input type="password" id="senhaLogin" placeholder="Sua senha">
         </div>
         <button class="botao" id="btnLogin" onclick="entrar()">Entrar</button>
-        <div class="mensagem" id="msgLogin"></div>
+        <div class="mensagem erro" id="msgLogin"></div>
     </div>
 
     <div id="areaCadastro" class="oculto">
         <div class="grupo">
             <label>Nome Completo</label>
-            <input type="text" id="nomeCad">
+            <input type="text" id="nomeCad" placeholder="Seu nome">
         </div>
         <div class="grupo">
             <label>E-mail</label>
-            <input type="email" id="emailCad">
+            <input type="email" id="emailCad" placeholder="seu@email.com">
         </div>
         <div class="grupo">
             <label>Senha (mínimo 6 caracteres)</label>
-            <input type="password" id="senhaCad">
+            <input type="password" id="senhaCad" placeholder="Crie uma senha">
         </div>
         <button class="botao" id="btnCad" onclick="cadastrar()">Criar Conta</button>
-        <div class="mensagem" id="msgCad"></div>
+        <div class="mensagem erro" id="msgCad"></div>
     </div>
 </div>
 
 <script>
-// DADOS DO SEU PROJETO
 const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-// COPIE A CHAVE PÚBLICA DO SEU SUPABASE AQUI (ela começa com eyJ...)
-const SUPABASE_CHAVE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwYWhyaXd3Zml0bmRkbGhuZW5neiIsInJvbCI6ImludGVybmFsIiwiZXhwIjoyMDUxNDk2MDAwLCJzdWIiOiJwdWJsaWMtYWNjZXNzLWtleSJ9.7yY0XzZbLbXKdGdFzXzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4XzI4';
+// ✅ A CHAVE EXATA QUE VOCÊ TEM, JÁ INSERIDA
+const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
-// INICIALIZA DIRETO — SEM ATRASOS
+// Inicialização compatível com o novo formato
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-// Se já logado, vai direto
 if(localStorage.getItem('usuarioLogado')) {
-    window.location.href='empresas.html';
+    window.location.href = 'empresas.html';
 }
 
 function mostrarLogin(){
@@ -87,6 +88,8 @@ function mostrarLogin(){
     document.getElementById('areaLogin').classList.remove('oculto');
     document.getElementById('areaCadastro').classList.add('oculto');
     document.getElementById('msgLogin').style.display='none';
+    document.getElementById('msgCad').style.display='none';
+    document.getElementById('avisoMaster').style.display='none';
 }
 
 function mostrarCadastro(){
@@ -94,6 +97,7 @@ function mostrarCadastro(){
     document.querySelectorAll('.aba')[1].classList.add('ativa');
     document.getElementById('areaLogin').classList.add('oculto');
     document.getElementById('areaCadastro').classList.remove('oculto');
+    document.getElementById('msgLogin').style.display='none';
     document.getElementById('msgCad').style.display='none';
 }
 
@@ -102,24 +106,34 @@ async function entrar(){
     const senha = document.getElementById('senhaLogin').value.trim();
     const msg = document.getElementById('msgLogin');
     const btn = document.getElementById('btnLogin');
-    msg.className = 'mensagem erro';
+    const avisoMaster = document.getElementById('avisoMaster');
 
-    if(!email || !senha){msg.textContent='Preencha e-mail e senha!';msg.style.display='block';return}
+    if(!email || !senha){
+        msg.textContent = '⚠️ Preencha e-mail e senha!';
+        msg.style.display='block';
+        return;
+    }
 
     btn.disabled = true;
     btn.textContent = 'Entrando...';
     msg.style.display='none';
 
     try {
-        const {data,error} = await supabase.auth.signInWithPassword({email,password:senha});
+        const {data, error} = await supabase.auth.signInWithPassword({email, password: senha});
         if(error) throw error;
 
-        const nivel = email.toLowerCase()===EMAIL_MASTER.toLowerCase()?'master':'usuario';
+        const nivel = email.toLowerCase() === EMAIL_MASTER.toLowerCase() ? 'master' : 'usuario';
         localStorage.setItem('usuarioLogado', data.user.id);
         localStorage.setItem('nivelUsuario', nivel);
-        window.location.href='empresas.html';
+
+        if(nivel === 'master'){
+            avisoMaster.style.display = 'block';
+            setTimeout(() => window.location.href = 'empresas.html', 1800);
+        } else {
+            window.location.href = 'empresas.html';
+        }
     } catch (erro) {
-        msg.textContent = 'Erro: ' + erro.message;
+        msg.textContent = '❌ ' + erro.message;
         msg.style.display='block';
     } finally {
         btn.disabled = false;
@@ -133,32 +147,37 @@ async function cadastrar(){
     const senha = document.getElementById('senhaCad').value.trim();
     const msg = document.getElementById('msgCad');
     const btn = document.getElementById('btnCad');
-    msg.className = 'mensagem erro';
 
-    if(nome.length<3){msg.textContent='Nome com pelo menos 3 letras!';msg.style.display='block';return}
-    if(senha.length<6){msg.textContent='Senha com pelo menos 6 caracteres!';msg.style.display='block';return}
+    if(nome.length < 3){
+        msg.textContent = '⚠️ Nome com pelo menos 3 letras!';
+        msg.style.display='block';
+        return;
+    }
+    if(senha.length < 6){
+        msg.textContent = '⚠️ Senha com pelo menos 6 caracteres!';
+        msg.style.display='block';
+        return;
+    }
 
     btn.disabled = true;
     btn.textContent = 'Cadastrando...';
     msg.style.display='none';
 
     try {
-        const {data,error} = await supabase.auth.signUp({
-            email:email,
-            password:senha,
-            options:{
-                data:{nome:nome},
-                emailRedirectTo: window.location.origin
-            }
+        const {data, error} = await supabase.auth.signUp({
+            email: email,
+            password: senha,
+            options: { data: { nome: nome }, emailRedirectTo: window.location.origin }
         });
         if(error) throw error;
 
         msg.className = 'mensagem sucesso';
-        msg.textContent = 'Conta criada! Faça login agora.';
+        msg.textContent = '✅ Conta criada! Faça login agora.';
         msg.style.display='block';
         setTimeout(mostrarLogin, 2500);
     } catch (erro) {
-        msg.textContent = 'Erro: ' + erro.message;
+        msg.className = 'mensagem erro';
+        msg.textContent = '❌ ' + erro.message;
         msg.style.display='block';
     } finally {
         btn.disabled = false;
@@ -166,6 +185,5 @@ async function cadastrar(){
     }
 }
 </script>
-
 </body>
 </html>
