@@ -36,7 +36,6 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem;font
         <div class="aba" onclick="mostrarAba('cadastro')">Cadastrar</div>
     </div>
 
-    <!-- Formulário de Login -->
     <div class="form ativo" id="formLogin">
         <div class="aviso-master" id="avisoMaster">✅ Conta Master detectada: acesso total liberado!</div>
         <div class="campo">
@@ -51,7 +50,6 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem;font
         <div class="mensagem erro" id="msgLogin"></div>
     </div>
 
-    <!-- Formulário de Cadastro -->
     <div class="form" id="formCadastro">
         <div class="campo">
             <label>Nome Completo</label>
@@ -74,11 +72,9 @@ input{width:100%;padding:.75rem;border:1px solid #ccc;border-radius:.375rem;font
 const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
 const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-
-// Dados do Acesso Master
 const EMAIL_MASTER = 'admaster@hibrity.com';
 
-// Se já estiver logado, vai direto escolher empresa
+// Se já estiver logado, pula direto
 if (localStorage.getItem('usuarioLogado')) {
     window.location.href = 'empresas.html';
 }
@@ -99,6 +95,13 @@ async function fazerLogin(){
     const msg = document.getElementById('msgLogin');
     const avisoMaster = document.getElementById('avisoMaster');
 
+    if(!email || !senha){
+        msg.textContent = 'Preencha e-mail e senha!';
+        msg.className = 'mensagem erro';
+        msg.style.display = 'block';
+        return;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
 
     if(error){
@@ -108,7 +111,6 @@ async function fazerLogin(){
         return;
     }
 
-    // Define nível Master automaticamente para o e-mail cadastrado
     const nivel = email === EMAIL_MASTER ? 'master' : 'usuario';
     localStorage.setItem('usuarioLogado', data.user.id);
     localStorage.setItem('nivelUsuario', nivel);
@@ -137,12 +139,7 @@ async function fazerCadastro(){
     const { data, error } = await supabase.auth.signUp({
         email: email,
         password: senha,
-        options: { 
-            data: { 
-                nome: nome,
-                nivel: email === EMAIL_MASTER ? 'master' : 'usuario'
-            } 
-        }
+        options: { data: { nome: nome, nivel: email === EMAIL_MASTER ? 'master' : 'usuario' } }
     });
 
     if(error){
@@ -152,10 +149,10 @@ async function fazerCadastro(){
         return;
     }
 
-    msg.textContent = 'Conta criada! Verifique seu e-mail ou entre agora.';
+    msg.textContent = 'Conta criada! Faça login agora.';
     msg.className = 'mensagem sucesso';
     msg.style.display = 'block';
-    setTimeout(() => mostrarAba('login'), 2500);
+    setTimeout(() => mostrarAba('login'), 2000);
 }
 </script>
 
