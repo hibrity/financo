@@ -96,12 +96,10 @@
     </div>
 
     <script>
-        // Dados do projeto NOVO
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-        // Verifica se já está logado e redireciona
         async function verificarLogado() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
@@ -184,7 +182,6 @@
             }
         });
 
-        // LOGIN CORRIGIDO COM PARÂMETRO CORRETO
         async function entrar(){
             const email = document.getElementById('emailLogin').value.trim();
             const senha = document.getElementById('senhaLogin').value.trim();
