@@ -96,7 +96,6 @@
     </div>
 
     <script>
-        // Dados do projeto NOVO
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
@@ -110,9 +109,9 @@
                 localStorage.setItem('nivelUsuario', nivel);
                 
                 if (nivel === 'master') {
-                    window.location.href = 'painel-master.html';
+                    window.location.href = './painel-master.html';
                 } else {
-                    window.location.href = 'inicio.html';
+                    window.location.href = './inicio.html';
                 }
             }
         }
@@ -200,7 +199,11 @@
             msg.style.display='none';
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, senha });
+                // ✅ CORRIGIDO: usa "password" como espera a API do Supabase
+                const { data, error } = await supabase.auth.signInWithPassword({ 
+                    email: email, 
+                    password: senha 
+                });
                 if(error) throw error;
 
                 const user = data.user;
@@ -210,9 +213,9 @@
                 localStorage.setItem('nivelUsuario', nivel);
 
                 if (nivel === 'master') {
-                    window.location.href = 'painel-master.html';
+                    window.location.href = './painel-master.html';
                 } else {
-                    window.location.href = 'inicio.html';
+                    window.location.href = './inicio.html';
                 }
             } catch (erro) {
                 msg.className = 'mensagem erro';
