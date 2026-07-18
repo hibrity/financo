@@ -6,8 +6,12 @@
     <title>Financo - Controle Financeiro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
     <style>
-        /* 🔒 BLOQUEIO TOTAL: NADA APARECE ANTES DE VERIFICAR */
-        html { visibility: hidden; display: none; }
+        /* 🔒 OCULTA TUDO ABSOLUTAMENTE LOGO NO INÍCIO — SEM PISCADA */
+        html, body { 
+            visibility: hidden !important; 
+            opacity: 0 !important; 
+            display: none !important; 
+        }
         * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
         html { font-size: 16px; }
         body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
@@ -116,10 +120,12 @@
 <body>
 
     <script>
-        // 🛡️ BLOQUEIA VOLTAR LOGO NO INÍCIO — ANTES DE QUALQUER COISA
+        // 🛡️ BLOQUEIO TOTAL DO BOTÃO VOLTAR — EXECUTA ANTES DE TUDO
+        history.replaceState(null, null, location.href);
         history.pushState(null, null, location.href);
         window.addEventListener('popstate', () => {
-            history.go(1); // Sempre avança, nunca volta
+            history.go(1);
+            location.reload(); // Força recarregar se tentar voltar
         });
 
         // ================== CONEXÃO SUPABASE ==================
@@ -128,27 +134,35 @@
         const TABELA_SUPABASE = 'financo_dados';
         let supabase;
 
-        // 🚀 VERIFICAÇÃO 100% SUPABASE — MOSTRA SÓ SE AUTORIZADO
+        // 🚀 VERIFICAÇÃO ESTRITA — SÓ MOSTRA SE AUTENTICADO
         async function init() {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+            
+            // Verifica sessão
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
+                // Redireciona sem deixar rastro
                 window.location.replace('index.html');
                 return;
             }
 
-            // ✅ LIBERA VISUALIZAÇÃO SÓ AGORA — SEM PISCADA
+            // ✅ LIBERA VISUALIZAÇÃO — AGORA SIM, SEM PISCADA
             document.documentElement.style.visibility = 'visible';
+            document.documentElement.style.opacity = '1';
             document.documentElement.style.display = 'block';
+            document.body.style.visibility = 'visible';
+            document.body.style.opacity = '1';
+            document.body.style.display = 'block';
         }
         init();
 
-        // 🚪 SAIR CORRETO — QUEBRA HISTÓRICO
+        // 🚪 SAIR LIMPO — QUEBRA TODO O HISTÓRICO
         async function sair() {
-            await supabase.auth.signOut({ scope: 'local' });
+            await supabase.auth.signOut({ scope: 'global' });
             localStorage.clear();
             sessionStorage.clear();
+            history.replaceState(null, '', 'index.html');
             window.location.replace('index.html');
         }
     </script>
@@ -246,7 +260,7 @@
     <div class="pagina" id="paginaExportar">
         <div class="cabecalho-pagina">
             <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
-            <h2 class="Index.html">💾 Salvar e Exportar</h2><div></div>
+            <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
         </div>
         <div class="tabela">
             <div class="tabela-wrapper">
