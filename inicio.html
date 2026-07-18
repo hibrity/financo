@@ -114,31 +114,28 @@
 <body>
 
     <script>
-        // 🔒 PROTEÇÃO ANTES DE CARREGAR TUDO — SEM PISCAR
+        // 🔒 VERIFICAÇÃO IMEDIATA — ANTES DE TUDO, SEM PISCAR
         if (!localStorage.getItem('usuarioLogado')) {
             window.location.replace('index.html');
         }
 
-        // ================== CONEXÃO COM O SUPABASE ==================
+        // ================== CONEXÃO SUPABASE ==================
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const TABELA_SUPABASE = 'financo_dados';
-        let supabase = null;
+        let supabase;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-                console.log('✅ Conectado ao Supabase!');
-            } catch (erro) {
-                console.warn('⚠️ Erro ao conectar:', erro.message);
-            }
-        });
+        // Inicializa sem atrasar a página
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-        // 🚪 SAIR GARANTIDO — NÃO TRAVA, NÃO PISCA
+        // 🚪 FUNÇÃO SAIR — FUNCIONA 100%, LIMPA TUDO
         function sair() {
+            // Limpa dados locais
             localStorage.removeItem('usuarioLogado');
             localStorage.removeItem('nivelUsuario');
-            supabase?.auth.signOut?.().catch(() => {});
+            // Encerra sessão na nuvem (sem travar)
+            supabase.auth.signOut().catch(()=>{});
+            // Quebra histórico e redireciona — NÃO VOLTA MAIS
             window.location.replace('index.html');
         }
     </script>
@@ -408,6 +405,8 @@
             document.getElementById('paginaExportar').classList.add('ativa');
             atualizarPaginaExportar();
             window.scrollTo(0,0);
+            // Limpa histórico interno para não piscar
+            history.replaceState(null, '', 'inicio.html');
         }
         function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
         function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
@@ -416,6 +415,7 @@
             document.getElementById('paginaPrincipal').classList.add('ativa');
             atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
             window.scrollTo(0,0);
+            // CORREÇÃO CHAVE: apaga entrada do histórico
             history.replaceState(null, '', 'inicio.html');
         }
 
