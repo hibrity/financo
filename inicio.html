@@ -114,26 +114,31 @@
 <body>
 
     <script>
-        // 🔒 PROTEÇÃO DE ACESSO COMPLETA: só entra se estiver logado de verdade
+        // 🔒 PROTEÇÃO ANTES DE CARREGAR TUDO — SEM PISCAR
+        if (!localStorage.getItem('usuarioLogado')) {
+            window.location.replace('index.html');
+        }
+
+        // ================== CONEXÃO COM O SUPABASE ==================
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+        const TABELA_SUPABASE = 'financo_dados';
+        let supabase = null;
 
-        async function verificarAcesso() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.replace('index.html');
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+                console.log('✅ Conectado ao Supabase!');
+            } catch (erro) {
+                console.warn('⚠️ Erro ao conectar:', erro.message);
             }
-        }
-        verificarAcesso();
+        });
 
-        // 🚪 FUNÇÃO DE SAIR EXATA COMO VOCÊ PEDIU
-        async function sair() {
-            await supabase.auth.signOut();
-
+        // 🚪 SAIR GARANTIDO — NÃO TRAVA, NÃO PISCA
+        function sair() {
             localStorage.removeItem('usuarioLogado');
             localStorage.removeItem('nivelUsuario');
-
+            supabase?.auth.signOut?.().catch(() => {});
             window.location.replace('index.html');
         }
     </script>
@@ -277,7 +282,6 @@
     </div>
 
     <script>
-        const TABELA_SUPABASE = 'financo_dados';
         let lancamentos = [];
         let ultimo = '';
         let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
@@ -412,6 +416,7 @@
             document.getElementById('paginaPrincipal').classList.add('ativa');
             atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
             window.scrollTo(0,0);
+            history.replaceState(null, '', 'inicio.html');
         }
 
         function atualizarPaginaExportar() {
