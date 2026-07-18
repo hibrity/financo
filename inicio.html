@@ -114,38 +114,28 @@
 <body>
 
     <script>
-        // 🔒 PROTEÇÃO DE ACESSO: só entra se estiver logado
-        if (!localStorage.getItem('usuarioLogado')) {
-            window.location.href = 'index.html';
-        }
+        // 🔒 PROTEÇÃO DE ACESSO COMPLETA: só entra se estiver logado de verdade
+        const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
+        const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-        // ================== CONEXÃO COM O SUPABASE ==================
-        const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-        const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
-        const TABELA_SUPABASE = 'financo_dados';
-        let supabase = null;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                if (window.supabase && window.supabase.createClient) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-                    console.log('✅ Conectado ao Supabase!');
-                } else {
-                    console.warn('⚠️ Biblioteca do Supabase não carregada');
-                }
-            } catch (erro) {
-                console.warn('⚠️ Erro ao conectar:', erro.message);
+        async function verificarAcesso() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.replace('index.html');
             }
-        });
+        }
+        verificarAcesso();
 
-        // 🚪 FUNÇÃO DE SAIR
-        async function sair(){
-            if(supabase) await supabase.auth.signOut();
+        // 🚪 FUNÇÃO DE SAIR EXATA COMO VOCÊ PEDIU
+        async function sair() {
+            await supabase.auth.signOut();
+
             localStorage.removeItem('usuarioLogado');
             localStorage.removeItem('nivelUsuario');
-            window.location.href = 'index.html';
+
+            window.location.replace('index.html');
         }
-        // ==============================================================
     </script>
 
     <div class="pagina ativa" id="paginaPrincipal">
@@ -287,6 +277,7 @@
     </div>
 
     <script>
+        const TABELA_SUPABASE = 'financo_dados';
         let lancamentos = [];
         let ultimo = '';
         let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
@@ -487,8 +478,8 @@
                     itens_venda: itensVenda, itens_despesa: itensDespesa
                 }));
 
-                const { erro } = await supabase.from(TABELA_SUPABASE).insert(dados);
-                if (erro) throw erro;
+                const { error } = await supabase.from(TABELA_SUPABASE).insert(dados);
+                if (error) throw error;
                 alert('✅ Salvo na nuvem com sucesso!');
             } catch (erro) {
                 alert(`❌ Erro: ${erro.message}`);
@@ -500,17 +491,17 @@
             if (!confirm('Isso substituirá os dados atuais. Continuar?')) return;
 
             try {
-                const { dados, erro } = await supabase.from(TABELA_SUPABASE).select('*');
-                if (erro) throw erro;
-                if (!dados || dados.length === 0) return alert('Nada salvo na nuvem ainda.');
+                const { data, error } = await supabase.from(TABELA_SUPABASE).select('*');
+                if (error) throw error;
+                if (!data || data.length === 0) return alert('Nada salvo na nuvem ainda.');
 
-                lancamentos = dados.map(d => ({
+                lancamentos = data.map(d => ({
                     data: d.data, tipo: d.tipo, item: d.item, valor: d.valor,
                     pag: d.pagamento, obs: d.observacao
                 }));
 
-                if (dados[0].itens_venda) itensVenda = dados[0].itens_venda;
-                if (dados[0].itens_despesa) itensDespesa = dados[0].itens_despesa;
+                if (data[0].itens_venda) itensVenda = data[0].itens_venda;
+                if (data[0].itens_despesa) itensDespesa = data[0].itens_despesa;
 
                 atualizarTabela(); atualizarSoma(); atualizarSelectPorTipo();
                 atualizarPaginaExportar(); verificarBotaoContinuar();
