@@ -38,7 +38,6 @@
             <button class="aba" onclick="mostrarCadastro()">Criar Conta</button>
         </div>
 
-        <!-- Área de Login -->
         <div id="areaLogin">
             <div class="grupo">
                 <label>E-mail</label>
@@ -55,7 +54,6 @@
             </div>
         </div>
 
-        <!-- Área de Cadastro -->
         <div id="areaCadastro" class="oculto">
             <div class="grupo">
                 <label>Nome Completo</label>
@@ -84,7 +82,6 @@
             <div class="mensagem erro" id="msgCad"></div>
         </div>
 
-        <!-- Área de Recuperação de Senha -->
         <div id="areaRecupera" class="oculto">
             <div class="grupo">
                 <label>E-mail cadastrado</label>
@@ -99,12 +96,10 @@
     </div>
 
     <script>
-        // ================== CONEXÃO COM O SUPABASE ==================
         const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-        // ================== VERIFICAÇÃO DE ACESSO ==================
         async function verificarLogado() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
@@ -122,7 +117,6 @@
         }
         verificarLogado();
 
-        // ================== FUNÇÕES DE NAVEGAÇÃO ==================
         function mostrarLogin() {
             document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
             document.querySelectorAll('.aba')[0].classList.add('ativa');
@@ -152,7 +146,6 @@
             document.querySelectorAll('.mensagem').forEach(m => m.style.display = 'none');
         }
 
-        // ================== FORMATAÇÃO DE DOCUMENTO ==================
         function ajustarDocumento(){
             const tipo = document.getElementById('tipoPessoaCad').value;
             const label = document.getElementById('labelDocCad');
@@ -180,7 +173,6 @@
             return valor;
         }
 
-        // Aplica formatação ao digitar
         document.addEventListener('DOMContentLoaded', () => {
             const docInput = document.getElementById('documentoCad');
             if(docInput){
@@ -190,7 +182,6 @@
             }
         });
 
-        // ================== FUNÇÃO DE LOGIN ==================
         async function entrar(){
             const email = document.getElementById('emailLogin').value.trim();
             const senha = document.getElementById('senhaLogin').value.trim();
@@ -212,12 +203,7 @@
                 if(error) throw error;
 
                 const user = data.user;
-                const status = user.user_metadata?.status_aprovacao || 'aprovado';
                 const nivel = user.user_metadata?.nivel || 'comum';
-
-                if(status === 'pendente'){
-                    throw new Error('Sua conta ainda está aguardando aprovação do administrador.');
-                }
 
                 localStorage.setItem('usuarioLogado', user.id);
                 localStorage.setItem('nivelUsuario', nivel);
@@ -237,7 +223,6 @@
             }
         }
 
-        // ================== FUNÇÃO DE CADASTRO ==================
         async function cadastrar(){
             const nome = document.getElementById('nomeCad').value.trim();
             const tipoPessoa = document.getElementById('tipoPessoaCad').value;
@@ -247,7 +232,6 @@
             const msg = document.getElementById('msgCad');
             const btn = document.getElementById('btnCad');
 
-            // Validações
             if(nome.length < 3){
                 msg.textContent = '⚠️ Nome com pelo menos 3 letras!';
                 msg.style.display='block';
@@ -289,7 +273,7 @@
                             tipo_pessoa: tipoPessoa,
                             documento: documento,
                             nivel: 'comum',
-                            status_aprovacao: 'pendente'
+                            status_aprovacao: 'aprovado'
                         }, 
                         emailRedirectTo: window.location.origin 
                     }
@@ -297,9 +281,9 @@
                 if(error) throw error;
 
                 msg.className = 'mensagem sucesso';
-                msg.textContent = '✅ Conta criada! Aguardando aprovação do administrador.';
+                msg.textContent = '✅ Conta criada com sucesso! Você já pode acessar o sistema.';
                 msg.style.display='block';
-                setTimeout(mostrarLogin, 4000);
+                setTimeout(mostrarLogin, 3000);
             } catch (erro) {
                 msg.className = 'mensagem erro';
                 msg.textContent = '❌ ' + erro.message;
@@ -310,7 +294,6 @@
             }
         }
 
-        // ================== RECUPERAÇÃO DE SENHA ==================
         async function recuperarSenha(){
             const email = document.getElementById('emailRecupera').value.trim();
             const msg = document.getElementById('msgRecupera');
