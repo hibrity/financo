@@ -218,8 +218,9 @@
 </div>
 
 <div class="pagina" id="paginaExportar">
+    <!-- ALTERAÇÃO AQUI: onclick direto sem função intermediária -->
     <div class="cabecalho-pagina">
-        <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
+        <button class="btn voltar" style="width: auto;" onclick="window.location.href='inicio.html'; return false;">⬅️ Voltar</button>
         <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
     </div>
     <div class="tabela">
@@ -395,10 +396,7 @@
     }
     function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
     function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
-    // Função alterada: agora redireciona para inicio.html
-    function voltarParaPrincipal() {
-        window.location.href = 'inicio.html';
-    }
+    // Removi a função voltarParaPrincipal para evitar conflitos
 
     function atualizarPaginaExportar() {
         const tab = document.getElementById('tabelaExportar');
