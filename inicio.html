@@ -6,41 +6,15 @@
     <title>Financo - Controle Financeiro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
     <style>
-        /* 🔧 NÃO USAMOS DISPLAY:NONE — USAMOS OPACIDADE + BLOQUEIO */
         html { background: #f5f5f5; }
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
 
-        /* 🚫 TELA DE BLOQUEIO — FICA POR CIMA DE TUDO ATÉ LIBERAR */
-        #tela-bloqueio {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #f5f5f5;
-            z-index: 999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: #1565c0;
-        }
-
-        /* CONTEÚDO PRINCIPAL — OCULTO MAS ESTRUTURA CARREGA */
-        #conteudo-principal {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-        }
-
-        /* RESTO DO SEU CSS ORIGINAL — SEM ALTERAÇÕES */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { font-size: 16px; }
         body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
         .cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         h1 { color: #1565c0; font-size: 1.75rem; margin: 0; }
-        .btn-sair { background: #c62828; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
-        .btn-sair:hover { background: #8e0000; }
+        .btn-sair { display: none; }
         .barra-botoes { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
         .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 0; min-width: 140px; max-width: 200px; }
         .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; text-decoration: none; }
@@ -141,467 +115,408 @@
 </head>
 <body>
 
-    <!-- 🛡️ CAMADA DE SEGURANÇA — FICA POR CIMA DE TUDO -->
-    <div id="tela-bloqueio">🔐 Verificando acesso...</div>
+<div id="conteudo-principal">
+<script>
+    const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
+    const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
+    const TABELA_SUPABASE = 'financo_dados';
+    let supabase;
 
-    <!-- CONTEÚDO ENVOLVIDO PARA CONTROLE DE VISIBILIDADE -->
-    <div id="conteudo-principal">
-    <script>
-        // 🚫 BLOQUEIO DE HISTÓRICO — RODA ABSOLUTAMENTE PRIMEIRO
-        (function() {
-            // Substitui e empilha estado para limpar histórico anterior
-            history.replaceState({bloqueado: true}, document.title, location.href);
-            history.pushState({bloqueado: true}, document.title, location.href);
-            
-            // Intercepta voltar — SEMPRE AVANÇA, NUNCA VOLTA
-            window.addEventListener('popstate', function(e) {
-                if (e.state && e.state.bloqueado) {
-                    history.go(1);
-                    return;
-                }
-                // Força recarregamento se tentar navegar para fora
-                window.location.replace(location.href);
-            }, {passive: false});
-        })();
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
 
-        // ================== CONEXÃO SUPABASE ==================
-        const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
-        const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
-        const TABELA_SUPABASE = 'financo_dados';
-        let supabase;
+    function sair() {}
+</script>
 
-        // ✅ VERIFICAÇÃO SEGURA — LIBERA SÓ SE AUTENTICADO
-        async function init() {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-
-            // Escuta mudanças em tempo real
-            supabase.auth.onAuthStateChange((_, session) => {
-                if (!session) redirecionarLogin();
-                else liberarTela();
-            });
-
-            // Verificação inicial
-            const {data: {session}} = await supabase.auth.getSession();
-            if (!session) return redirecionarLogin();
-            
-            liberarTela();
-        }
-
-        function liberarTela() {
-            // Remove bloqueio e mostra conteúdo — SEM TELA BRANCA
-            document.getElementById('conteudo-principal').style.visibility = 'visible';
-            document.getElementById('conteudo-principal').style.opacity = '1';
-            document.getElementById('tela-bloqueio').remove();
-        }
-
-        function redirecionarLogin() {
-            window.location.replace('index.html');
-        }
-
-        // 🚪 SAIR LIMPO — DESTRÓI RASTROS
-        async function sair() {
-            await supabase.auth.signOut({scope: 'global'});
-            localStorage.clear();
-            sessionStorage.clear();
-            history.replaceState({}, '', 'index.html');
-            window.location.replace('index.html');
-        }
-
-        // INICIALIZA
-        init();
-    </script>
-
-    <div class="pagina ativa" id="paginaPrincipal">
-        <div class="cabecalho">
-            <h1>🔹 Financo</h1>
-            <button class="btn-sair" onclick="sair()">🚪 Sair</button>
-        </div>
-
-        <div class="barra-botoes">
-            <div style="position: relative;">
-                <button class="btn primario" onclick="alternarMenuGerenciar()">⚙️ Gerenciar Itens ▼</button>
-                <div class="menu-gerenciar" id="menuGerenciar">
-                    <div class="grupo-lista">
-                        <h4>📈 Itens de Venda / Entrada</h4>
-                        <div id="listaVenda"></div>
-                        <button class="btn-acao adicionar" onclick="adicionarNovoItem('venda')">+ Adicionar Item</button>
-                    </div>
-                    <div class="grupo-lista">
-                        <h4>📉 Itens de Despesa / Saída</h4>
-                        <div id="listaDespesa"></div>
-                        <button class="btn-acao adicionar" onclick="adicionarNovoItem('despesa')">+ Adicionar Item</button>
-                    </div>
-                    <button class="btn-acao salvar" style="width:100%; margin-top:0.75rem;" onclick="salvarItensMenu()">✅ Salvar Alterações</button>
-                </div>
-            </div>
-            <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
-            <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
-            <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
-            <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
-            <button class="btn aviso pequeno" onclick="carregarDoSupabase()">☁️ Carregar da Nuvem</button>
-        </div>
-
-        <div class="form" id="formulario">
-            <div class="linha">
-                <div class="campo">
-                    <label>Data</label>
-                    <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
-                </div>
-                <div class="campo">
-                    <label>Tipo</label>
-                    <div class="tipo">
-                        <label><input type="checkbox" id="venda"> Venda / Entrada</label>
-                        <label><input type="checkbox" id="despesa"> Despesa / Saída</label>
-                    </div>
-                </div>
-                <div class="campo">
-                    <label>Item</label>
-                    <select id="item"><option value="">Selecione primeiro o tipo</option></select>
-                </div>
-            </div>
-            <div class="linha">
-                <div class="campo">
-                    <label>Valor R$</label>
-                    <input type="number" step="0.01" id="valor" placeholder="0,00">
-                </div>
-                <div class="campo">
-                    <label>Pagamento</label>
-                    <select id="pagamento">
-                        <option value="">Selecione</option>
-                        <option>Dinheiro</option>
-                        <option>Pix</option>
-                        <option>Cartão Crédito</option>
-                        <option>Cartão Débito</option>
-                    </select>
-                </div>
-                <div class="campo" style="flex: 2 1 18.75rem;">
-                    <label>Observação</label>
-                    <input type="text" id="obs" placeholder="Opcional">
-                </div>
-            </div>
-        </div>
-
-        <div class="tabela">
-            <div class="tabela-wrapper">
-                <table>
-                    <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th></tr></thead>
-                    <tbody id="corpoTabela"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="totais">
-            <div class="card vendas"><div>Total Vendas</div><div class="valor" id="totalVendas">R$ 0,00</div></div>
-            <div class="card despesas"><div>Total Despesas</div><div class="valor" id="totalDespesas">R$ 0,00</div></div>
-            <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="saldo">R$ 0,00</div></div>
-        </div>
-
-        <div class="area-continuar" id="areaContinuar">
-            <button class="btn sucesso" onclick="irParaPaginaExportar()">✅ Continuar para Salvar/Exportar</button>
-        </div>
+<div class="pagina ativa" id="paginaPrincipal">
+    <div class="cabecalho">
+        <h1>🔹 Financo</h1>
+        <button class="btn-sair" onclick="sair()">🚪 Sair</button>
     </div>
 
-    <div class="pagina" id="paginaExportar">
-        <div class="cabecalho-pagina">
-            <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
-            <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
-        </div>
-        <div class="tabela">
-            <div class="tabela-wrapper">
-                <table>
-                    <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th class="acao-coluna">Ações</th></tr></thead>
-                    <tbody id="tabelaExportar"></tbody>
-                </table>
+    <div class="barra-botoes">
+        <div style="position: relative;">
+            <button class="btn primario" onclick="alternarMenuGerenciar()">⚙️ Gerenciar Itens ▼</button>
+            <div class="menu-gerenciar" id="menuGerenciar">
+                <div class="grupo-lista">
+                    <h4>📈 Itens de Venda / Entrada</h4>
+                    <div id="listaVenda"></div>
+                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('venda')">+ Adicionar Item</button>
+                </div>
+                <div class="grupo-lista">
+                    <h4>📉 Itens de Despesa / Saída</h4>
+                    <div id="listaDespesa"></div>
+                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('despesa')">+ Adicionar Item</button>
+                </div>
+                <button class="btn-acao salvar" style="width:100%; margin-top:0.75rem;" onclick="salvarItensMenu()">✅ Salvar Alterações</button>
             </div>
         </div>
-        <div class="totais">
-            <div class="card vendas"><div>Total Vendas</div><div class="valor" id="expTotalVendas">R$ 0,00</div></div>
-            <div class="card despesas"><div>Total Despesas</div><div class="valor" id="expTotalDespesas">R$ 0,00</div></div>
-            <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="expSaldo">R$ 0,00</div></div>
+        <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
+        <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
+        <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
+        <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
+        <button class="btn aviso pequeno" onclick="carregarDoSupabase()">☁️ Carregar da Nuvem</button>
+    </div>
+
+    <div class="form" id="formulario">
+        <div class="linha">
+            <div class="campo">
+                <label>Data</label>
+                <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
+            </div>
+            <div class="campo">
+                <label>Tipo</label>
+                <div class="tipo">
+                    <label><input type="checkbox" id="venda"> Venda / Entrada</label>
+                    <label><input type="checkbox" id="despesa"> Despesa / Saída</label>
+                </div>
+            </div>
+            <div class="campo">
+                <label>Item</label>
+                <select id="item"><option value="">Selecione primeiro o tipo</option></select>
+            </div>
         </div>
-        <div class="caixa-exportar">
-            <h3>Opções de Salvamento e Impressão</h3>
-            <div class="grupo-botoes-exportar">
-                <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
-                <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
-                <button class="btn sucesso" onclick="salvarNoSupabase()">☁️ Salvar tudo na Nuvem</button>
+        <div class="linha">
+            <div class="campo">
+                <label>Valor R$</label>
+                <input type="number" step="0.01" id="valor" placeholder="0,00">
+            </div>
+            <div class="campo">
+                <label>Pagamento</label>
+                <select id="pagamento">
+                    <option value="">Selecione</option>
+                    <option>Dinheiro</option>
+                    <option>Pix</option>
+                    <option>Cartão Crédito</option>
+                    <option>Cartão Débito</option>
+                </select>
+            </div>
+            <div class="campo" style="flex: 2 1 18.75rem;">
+                <label>Observação</label>
+                <input type="text" id="obs" placeholder="Opcional">
             </div>
         </div>
     </div>
 
-    <div class="modal" id="modalEditar">
-        <div class="conteudo-modal">
-            <h3>✏️ Editar Lançamento</h3>
-            <div class="linha">
-                <div class="campo"><label>Data</label><input type="text" id="edtData" placeholder="dd/mm/aaaa" maxlength="10"></div>
-                <div class="campo"><label>Tipo</label><div class="tipo"><label><input type="checkbox" id="edtVenda"> Venda</label><label><input type="checkbox" id="edtDespesa"> Despesa</label></div></div>
-                <div class="campo"><label>Item</label><select id="edtItem"></select></div>
-            </div>
-            <div class="linha">
-                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="edtValor"></div>
-                <div class="campo"><label>Pagamento</label><select id="edtPagamento"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito</option><option>Cartão Débito</option></select></div>
-                <div class="campo" style="flex: 2 1 18.75rem;"><label>Observação</label><input type="text" id="edtObs"></div>
-            </div>
-            <div class="linha" style="margin-top: 1rem;">
-                <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
-                <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
-            </div>
+    <div class="tabela">
+        <div class="tabela-wrapper">
+            <table>
+                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th></tr></thead>
+                <tbody id="corpoTabela"></tbody>
+            </table>
         </div>
     </div>
 
-    <script>
-        let lancamentos = [];
-        let ultimo = '';
-        let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
-        let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
-        let indiceEdicaoAtual = null;
-        let pastaUltimosSalvos = [];
+    <div class="totais">
+        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="totalVendas">R$ 0,00</div></div>
+        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="totalDespesas">R$ 0,00</div></div>
+        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="saldo">R$ 0,00</div></div>
+    </div>
 
-        function dataHoje() {
-            const d = new Date();
-            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    <div class="area-continuar" id="areaContinuar">
+        <button class="btn sucesso" onclick="irParaPaginaExportar()">✅ Continuar para Salvar/Exportar</button>
+    </div>
+</div>
+
+<div class="pagina" id="paginaExportar">
+    <div class="cabecalho-pagina">
+        <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
+        <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
+    </div>
+    <div class="tabela">
+        <div class="tabela-wrapper">
+            <table>
+                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th class="acao-coluna">Ações</th></tr></thead>
+                <tbody id="tabelaExportar"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="totais">
+        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="expTotalVendas">R$ 0,00</div></div>
+        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="expTotalDespesas">R$ 0,00</div></div>
+        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="expSaldo">R$ 0,00</div></div>
+    </div>
+    <div class="caixa-exportar">
+        <h3>Opções de Salvamento e Impressão</h3>
+        <div class="grupo-botoes-exportar">
+            <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
+            <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
+            <button class="btn sucesso" onclick="salvarNoSupabase()">☁️ Salvar tudo na Nuvem</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalEditar">
+    <div class="conteudo-modal">
+        <h3>✏️ Editar Lançamento</h3>
+        <div class="linha">
+            <div class="campo"><label>Data</label><input type="text" id="edtData" placeholder="dd/mm/aaaa" maxlength="10"></div>
+            <div class="campo"><label>Tipo</label><div class="tipo"><label><input type="checkbox" id="edtVenda"> Venda</label><label><input type="checkbox" id="edtDespesa"> Despesa</label></div></div>
+            <div class="campo"><label>Item</label><select id="edtItem"></select></div>
+        </div>
+        <div class="linha">
+            <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="edtValor"></div>
+            <div class="campo"><label>Pagamento</label><select id="edtPagamento"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito</option><option>Cartão Débito</option></select></div>
+            <div class="campo" style="flex: 2 1 18.75rem;"><label>Observação</label><input type="text" id="edtObs"></div>
+        </div>
+        <div class="linha" style="margin-top: 1rem;">
+            <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
+            <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lancamentos = [];
+    let ultimo = '';
+    let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
+    let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
+    let indiceEdicaoAtual = null;
+    let pastaUltimosSalvos = [];
+
+    function dataHoje() {
+        const d = new Date();
+        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    }
+
+    function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
+
+    function atualizarSelectPorTipo() {
+        const ehVenda = document.getElementById('venda').checked;
+        const ehDespesa = document.getElementById('despesa').checked;
+        const select = document.getElementById('item');
+        select.innerHTML = '<option value="">Selecione primeiro o tipo</option>';
+        if (ehVenda) itensVenda.forEach(n => select.appendChild(new Option(n, n)));
+        else if (ehDespesa) itensDespesa.forEach(n => select.appendChild(new Option(n, n)));
+        verificarPreenchimentoAutomatico();
+    }
+
+    function verificarPreenchimentoAutomatico() {
+        const ehVenda = document.getElementById('venda').checked;
+        const ehDespesa = document.getElementById('despesa').checked;
+        const data = document.getElementById('data').value.trim();
+        const item = document.getElementById('item').value.trim();
+        const valor = parseFloat(document.getElementById('valor').value || 0);
+        const pag = document.getElementById('pagamento').value.trim();
+
+        if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) salvar();
+    }
+
+    function salvar() {
+        const ehVenda = document.getElementById('venda').checked;
+        const ehDespesa = document.getElementById('despesa').checked;
+        const data = document.getElementById('data').value.trim();
+        const item = document.getElementById('item').value.trim();
+        const valor = parseFloat(document.getElementById('valor').value || 0);
+        const pag = document.getElementById('pagamento').value.trim();
+        const obs = document.getElementById('obs').value.trim() || '-';
+
+        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return;
+
+        const chave = `${data}${ehVenda}${item}${valor}${pag}`;
+        if(chave === ultimo) return;
+        ultimo = chave;
+
+        lancamentos.push({data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs});
+        atualizarTabela();
+        atualizarSoma();
+        limparCampos();
+        verificarBotaoContinuar();
+    }
+
+    function atualizarTabela() {
+        const tab = document.getElementById('corpoTabela');
+        tab.innerHTML = '';
+        [...lancamentos].reverse().forEach(l => {
+            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda / Entrada' : 'Despesa / Saída'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td></tr>`;
+        });
+    }
+
+    function atualizarSoma() {
+        let v = 0, d = 0;
+        lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
+        const saldo = v - d;
+        document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
+        document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
+        document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
+    }
+
+    function limparCampos() {
+        document.getElementById('venda').checked = false;
+        document.getElementById('despesa').checked = false;
+        document.getElementById('item').innerHTML = '<option value="">Selecione primeiro o tipo</option>';
+        document.getElementById('valor').value = '';
+        document.getElementById('pagamento').value = '';
+        document.getElementById('obs').value = '';
+        document.getElementById('data').value = dataHoje();
+    }
+
+    function alternarMenuGerenciar() { document.getElementById('menuGerenciar').classList.toggle('aberto'); atualizarListasMenu(); }
+    function atualizarListasMenu() {
+        const lv = document.getElementById('listaVenda'), ld = document.getElementById('listaDespesa');
+        lv.innerHTML = ''; itensVenda.forEach((n,i)=>lv.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="v-${i}"><button class="btn-acao excluir" onclick="remover('venda',${i})">X</button></div>`);
+        ld.innerHTML = ''; itensDespesa.forEach((n,i)=>ld.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="d-${i}"><button class="btn-acao excluir" onclick="remover('despesa',${i})">X</button></div>`);
+    }
+    function remover(t,i){t==='venda'?itensVenda.splice(i,1):itensDespesa.splice(i,1);atualizarListasMenu();}
+    function adicionarNovoItem(t){t==='venda'?itensVenda.push(''):itensDespesa.push('');atualizarListasMenu();}
+    function salvarItensMenu() {
+        itensVenda = itensVenda.map((_,i)=>document.getElementById(`v-${i}`).value.trim()).filter(n=>n);
+        itensDespesa = itensDespesa.map((_,i)=>document.getElementById(`d-${i}`).value.trim()).filter(n=>n);
+        atualizarSelectPorTipo();
+        document.getElementById('menuGerenciar').classList.remove('aberto');
+        alert('Itens salvos com sucesso!');
+    }
+    
+    function abrirPastaUltimosSalvos(){window.location.href = 'salvos.html';}
+
+    function salvarNaPastaInterna() {
+        if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
+        let totalV = 0, totalD = 0;
+        lancamentos.forEach(l => l.tipo==='venda' ? totalV += l.valor : totalD += l.valor);
+        pastaUltimosSalvos.unshift({
+            dataHora: new Date().toLocaleString('pt-BR'),
+            lancamentos: JSON.parse(JSON.stringify(lancamentos)),
+            totalGeral: totalV - totalD
+        });
+        if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
+        localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
+        alert('✅ Salvo localmente!');
+    }
+
+    function verificarBotaoContinuar() {
+        const area = document.getElementById('areaContinuar');
+        lancamentos.length >= 1 ? area.classList.add('mostrar') : area.classList.remove('mostrar');
+    }
+
+    function irParaPaginaExportar() {
+        document.getElementById('paginaPrincipal').classList.remove('ativa');
+        document.getElementById('paginaExportar').classList.add('ativa');
+        atualizarPaginaExportar();
+        window.scrollTo(0,0);
+    }
+    function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
+    function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
+    function voltarParaPrincipal() {
+        document.getElementById('paginaExportar').classList.remove('ativa');
+        document.getElementById('paginaPrincipal').classList.add('ativa');
+        atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
+        window.scrollTo(0,0);
+    }
+
+    function atualizarPaginaExportar() {
+        const tab = document.getElementById('tabelaExportar');
+        tab.innerHTML = '';
+        lancamentos.forEach((l, i) => {
+            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
+        });
+        let v=0, d=0;
+        lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
+        document.getElementById('expTotalVendas').textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
+        document.getElementById('expTotalDespesas').textContent = `R$ ${d.toFixed(2).replace('.',',')}`;
+        document.getElementById('expSaldo').textContent = `R$ ${(v-d).toFixed(2).replace('.',',')}`;
+    }
+
+    function abrirEdicao(indice) {
+        indiceEdicaoAtual = indice;
+        const l = lancamentos[indice];
+        document.getElementById('edtVenda').checked = l.tipo === 'venda';
+        document.getElementById('edtDespesa').checked = l.tipo === 'despesa';
+        document.getElementById('edtData').value = l.data;
+        const selItem = document.getElementById('edtItem');
+        selItem.innerHTML = '<option value="">Selecione</option>';
+        l.tipo === 'venda' ? itensVenda.forEach(n=>selItem.appendChild(new Option(n,n))) : itensDespesa.forEach(n=>selItem.appendChild(new Option(n,n)));
+        selItem.value = l.item;
+        document.getElementById('edtValor').value = l.valor;
+        document.getElementById('edtPagamento').value = l.pag;
+        document.getElementById('edtObs').value = l.obs === '-' ? '' : l.obs;
+        document.getElementById('modalEditar').classList.add('aberto');
+    }
+
+    function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
+
+    function salvarEdicao() {
+        const ehVenda = document.getElementById('edtVenda').checked;
+        const ehDespesa = document.getElementById('edtDespesa').checked;
+        const data = document.getElementById('edtData').value.trim();
+        const item = document.getElementById('edtItem').value.trim();
+        const valor = parseFloat(document.getElementById('edtValor').value || 0);
+        const pag = document.getElementById('edtPagamento').value.trim();
+        const obs = document.getElementById('edtObs').value.trim() || '-';
+        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha tudo corretamente!'); return; }
+        lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
+        fecharModal(); atualizarTabela(); atualizarSoma(); atualizarPaginaExportar();
+        alert('✅ Atualizado!');
+    }
+
+    function excluirLancamento(indice) {
+        if(confirm('Excluir esse lançamento?')) {
+            lancamentos.splice(indice, 1);
+            atualizarTabela(); atualizarSoma(); atualizarPaginaExportar(); verificarBotaoContinuar();
         }
+    }
 
-        function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
+    async function salvarNoSupabase() {
+        if (!supabase) return alert('❌ Nuvem indisponível');
+        if (lancamentos.length === 0) return alert('Nenhum dado para salvar!');
 
-        function atualizarSelectPorTipo() {
-            const ehVenda = document.getElementById('venda').checked;
-            const ehDespesa = document.getElementById('despesa').checked;
-            const select = document.getElementById('item');
-            select.innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-            if (ehVenda) itensVenda.forEach(n => select.appendChild(new Option(n, n)));
-            else if (ehDespesa) itensDespesa.forEach(n => select.appendChild(new Option(n, n)));
-            verificarPreenchimentoAutomatico();
+        try {
+            await supabase.from(TABELA_SUPABASE).delete().neq('id', 0);
+            const dados = lancamentos.map(l => ({
+                data: l.data, tipo: l.tipo, item: l.item, valor: l.valor,
+                pagamento: l.pag, observacao: l.obs,
+                itens_venda: itensVenda, itens_despesa: itensDespesa
+            }));
+
+            const { error } = await supabase.from(TABELA_SUPABASE).insert(dados);
+            if (error) throw error;
+            alert('✅ Salvo na nuvem com sucesso!');
+        } catch (erro) {
+            alert(`❌ Erro: ${erro.message}`);
         }
+    }
 
-        function verificarPreenchimentoAutomatico() {
-            const ehVenda = document.getElementById('venda').checked;
-            const ehDespesa = document.getElementById('despesa').checked;
-            const data = document.getElementById('data').value.trim();
-            const item = document.getElementById('item').value.trim();
-            const valor = parseFloat(document.getElementById('valor').value || 0);
-            const pag = document.getElementById('pagamento').value.trim();
+    async function carregarDoSupabase() {
+        if (!supabase) return alert('❌ Nuvem indisponível');
+        if (!confirm('Isso substituirá os dados atuais. Continuar?')) return;
 
-            if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) salvar();
+        try {
+            const { data, error } = await supabase.from(TABELA_SUPABASE).select('*');
+            if (error) throw error;
+            if (!data || data.length === 0) return alert('Nada salvo na nuvem ainda.');
+
+            lancamentos = data.map(d => ({
+                data: d.data, tipo: d.tipo, item: d.item, valor: d.valor,
+                pag: d.pagamento, obs: d.observacao
+            }));
+
+            if (data[0].itens_venda) itensVenda = data[0].itens_venda;
+            if (data[0].itens_despesa) itensDespesa = data[0].itens_despesa;
+
+            atualizarTabela(); atualizarSoma(); atualizarSelectPorTipo();
+            atualizarPaginaExportar(); verificarBotaoContinuar();
+            alert(`✅ ${lancamentos.length} lançamentos carregados!`);
+        } catch (erro) {
+            alert(`❌ Erro: ${erro.message}`);
         }
+    }
 
-        function salvar() {
-            const ehVenda = document.getElementById('venda').checked;
-            const ehDespesa = document.getElementById('despesa').checked;
-            const data = document.getElementById('data').value.trim();
-            const item = document.getElementById('item').value.trim();
-            const valor = parseFloat(document.getElementById('valor').value || 0);
-            const pag = document.getElementById('pagamento').value.trim();
-            const obs = document.getElementById('obs').value.trim() || '-';
+    window.onload = function() {
+        const salvos = localStorage.getItem('financoPastaSalvos');
+        if(salvos) pastaUltimosSalvos = JSON.parse(salvos);
+        document.getElementById('data').value = dataHoje();
 
-            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return;
-
-            const chave = `${data}${ehVenda}${item}${valor}${pag}`;
-            if(chave === ultimo) return;
-            ultimo = chave;
-
-            lancamentos.push({data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs});
-            atualizarTabela();
-            atualizarSoma();
-            limparCampos();
-            verificarBotaoContinuar();
-        }
-
-        function atualizarTabela() {
-            const tab = document.getElementById('corpoTabela');
-            tab.innerHTML = '';
-            [...lancamentos].reverse().forEach(l => {
-                tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda / Entrada' : 'Despesa / Saída'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td></tr>`;
-            });
-        }
-
-        function atualizarSoma() {
-            let v = 0, d = 0;
-            lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
-            const saldo = v - d;
-            document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
-            document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
-            document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
-        }
-
-        function limparCampos() {
-            document.getElementById('venda').checked = false;
-            document.getElementById('despesa').checked = false;
-            document.getElementById('item').innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-            document.getElementById('valor').value = '';
-            document.getElementById('pagamento').value = '';
-            document.getElementById('obs').value = '';
-            document.getElementById('data').value = dataHoje();
-        }
-
-        function alternarMenuGerenciar() { document.getElementById('menuGerenciar').classList.toggle('aberto'); atualizarListasMenu(); }
-        function atualizarListasMenu() {
-            const lv = document.getElementById('listaVenda'), ld = document.getElementById('listaDespesa');
-            lv.innerHTML = ''; itensVenda.forEach((n,i)=>lv.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="v-${i}"><button class="btn-acao excluir" onclick="remover('venda',${i})">X</button></div>`);
-            ld.innerHTML = ''; itensDespesa.forEach((n,i)=>ld.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="d-${i}"><button class="btn-acao excluir" onclick="remover('despesa',${i})">X</button></div>`);
-        }
-        function remover(t,i){t==='venda'?itensVenda.splice(i,1):itensDespesa.splice(i,1);atualizarListasMenu();}
-        function adicionarNovoItem(t){t==='venda'?itensVenda.push(''):itensDespesa.push('');atualizarListasMenu();}
-        function salvarItensMenu() {
-            itensVenda = itensVenda.map((_,i)=>document.getElementById(`v-${i}`).value.trim()).filter(n=>n);
-            itensDespesa = itensDespesa.map((_,i)=>document.getElementById(`d-${i}`).value.trim()).filter(n=>n);
+        document.getElementById('venda').addEventListener('change', function() {
+            if(this.checked) document.getElementById('despesa').checked = false;
             atualizarSelectPorTipo();
-            document.getElementById('menuGerenciar').classList.remove('aberto');
-            alert('Itens salvos com sucesso!');
-        }
-        
-        function abrirPastaUltimosSalvos(){window.location.href = 'salvos.html';}
-
-        function salvarNaPastaInterna() {
-            if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
-            let totalV = 0, totalD = 0;
-            lancamentos.forEach(l => l.tipo==='venda' ? totalV += l.valor : totalD += l.valor);
-            pastaUltimosSalvos.unshift({
-                dataHora: new Date().toLocaleString('pt-BR'),
-                lancamentos: JSON.parse(JSON.stringify(lancamentos)),
-                totalGeral: totalV - totalD
-            });
-            if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
-            localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
-            alert('✅ Salvo localmente!');
-        }
-
-        function verificarBotaoContinuar() {
-            const area = document.getElementById('areaContinuar');
-            lancamentos.length >= 1 ? area.classList.add('mostrar') : area.classList.remove('mostrar');
-        }
-
-        function irParaPaginaExportar() {
-            document.getElementById('paginaPrincipal').classList.remove('ativa');
-            document.getElementById('paginaExportar').classList.add('ativa');
-            atualizarPaginaExportar();
-            window.scrollTo(0,0);
-        }
-        function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
-        function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
-        function voltarParaPrincipal() {
-            document.getElementById('paginaExportar').classList.remove('ativa');
-            document.getElementById('paginaPrincipal').classList.add('ativa');
-            atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
-            window.scrollTo(0,0);
-            history.replaceState(null, '', location.pathname);
-        }
-
-        function atualizarPaginaExportar() {
-            const tab = document.getElementById('tabelaExportar');
-            tab.innerHTML = '';
-            lancamentos.forEach((l, i) => {
-                tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
-            });
-            let v=0, d=0;
-            lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
-            document.getElementById('expTotalVendas').textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
-            document.getElementById('expTotalDespesas').textContent = `R$ ${d.toFixed(2).replace('.',',')}`;
-            document.getElementById('expSaldo').textContent = `R$ ${(v-d).toFixed(2).replace('.',',')}`;
-        }
-
-        function abrirEdicao(indice) {
-            indiceEdicaoAtual = indice;
-            const l = lancamentos[indice];
-            document.getElementById('edtVenda').checked = l.tipo === 'venda';
-            document.getElementById('edtDespesa').checked = l.tipo === 'despesa';
-            document.getElementById('edtData').value = l.data;
-            const selItem = document.getElementById('edtItem');
-            selItem.innerHTML = '<option value="">Selecione</option>';
-            l.tipo === 'venda' ? itensVenda.forEach(n=>selItem.appendChild(new Option(n,n))) : itensDespesa.forEach(n=>selItem.appendChild(new Option(n,n)));
-            selItem.value = l.item;
-            document.getElementById('edtValor').value = l.valor;
-            document.getElementById('edtPagamento').value = l.pag;
-            document.getElementById('edtObs').value = l.obs === '-' ? '' : l.obs;
-            document.getElementById('modalEditar').classList.add('aberto');
-        }
-
-        function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
-
-        function salvarEdicao() {
-            const ehVenda = document.getElementById('edtVenda').checked;
-            const ehDespesa = document.getElementById('edtDespesa').checked;
-            const data = document.getElementById('edtData').value.trim();
-            const item = document.getElementById('edtItem').value.trim();
-            const valor = parseFloat(document.getElementById('edtValor').value || 0);
-            const pag = document.getElementById('edtPagamento').value.trim();
-            const obs = document.getElementById('edtObs').value.trim() || '-';
-            if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha tudo corretamente!'); return; }
-            lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
-            fecharModal(); atualizarTabela(); atualizarSoma(); atualizarPaginaExportar();
-            alert('✅ Atualizado!');
-        }
-
-        function excluirLancamento(indice) {
-            if(confirm('Excluir esse lançamento?')) {
-                lancamentos.splice(indice, 1);
-                atualizarTabela(); atualizarSoma(); atualizarPaginaExportar(); verificarBotaoContinuar();
-            }
-        }
-
-        async function salvarNoSupabase() {
-            if (!supabase) return alert('❌ Nuvem indisponível');
-            if (lancamentos.length === 0) return alert('Nenhum dado para salvar!');
-
-            try {
-                await supabase.from(TABELA_SUPABASE).delete().neq('id', 0);
-                const dados = lancamentos.map(l => ({
-                    data: l.data, tipo: l.tipo, item: l.item, valor: l.valor,
-                    pagamento: l.pag, observacao: l.obs,
-                    itens_venda: itensVenda, itens_despesa: itensDespesa
-                }));
-
-                const { error } = await supabase.from(TABELA_SUPABASE).insert(dados);
-                if (error) throw error;
-                alert('✅ Salvo na nuvem com sucesso!');
-            } catch (erro) {
-                alert(`❌ Erro: ${erro.message}`);
-            }
-        }
-
-        async function carregarDoSupabase() {
-            if (!supabase) return alert('❌ Nuvem indisponível');
-            if (!confirm('Isso substituirá os dados atuais. Continuar?')) return;
-
-            try {
-                const { data, error } = await supabase.from(TABELA_SUPABASE).select('*');
-                if (error) throw error;
-                if (!data || data.length === 0) return alert('Nada salvo na nuvem ainda.');
-
-                lancamentos = data.map(d => ({
-                    data: d.data, tipo: d.tipo, item: d.item, valor: d.valor,
-                    pag: d.pagamento, obs: d.observacao
-                }));
-
-                if (data[0].itens_venda) itensVenda = data[0].itens_venda;
-                if (data[0].itens_despesa) itensDespesa = data[0].itens_despesa;
-
-                atualizarTabela(); atualizarSoma(); atualizarSelectPorTipo();
-                atualizarPaginaExportar(); verificarBotaoContinuar();
-                alert(`✅ ${lancamentos.length} lançamentos carregados!`);
-            } catch (erro) {
-                alert(`❌ Erro: ${erro.message}`);
-            }
-        }
-
-        window.onload = function() {
-            const salvos = localStorage.getItem('financoPastaSalvos');
-            if(salvos) pastaUltimosSalvos = JSON.parse(salvos);
-            document.getElementById('data').value = dataHoje();
-
-            document.getElementById('venda').addEventListener('change', function() {
-                if(this.checked) document.getElementById('despesa').checked = false;
-                atualizarSelectPorTipo();
-            });
-            document.getElementById('despesa').addEventListener('change', function() {
-                if(this.checked) document.getElementById('venda').checked = false;
-                atualizarSelectPorTipo();
-            });
-            document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
-            document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
-            document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
-        };
-    </script>
-    </div> <!-- Fim do conteudo-principal -->
+        });
+        document.getElementById('despesa').addEventListener('change', function() {
+            if(this.checked) document.getElementById('venda').checked = false;
+            atualizarSelectPorTipo();
+        });
+        document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
+        document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
+        document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
+    };
+</script>
+</div>
 </body>
 </html>
