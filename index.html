@@ -265,7 +265,6 @@
     </div>
 </div>
 
-<!-- NOVO MODAL DE SENHA DA INTEGRAÇÃO -->
 <div class="modal" id="modalSenhaIntegracao">
     <div class="conteudo-modal">
         <h3>🔐 Acesso à Integração</h3>
@@ -412,10 +411,17 @@
         window.scrollTo(0,0);
     }
 
-    // FUNÇÃO ALTERADA: Agora abre a tela de senha ao invés de ir direto
+    // REGRA AJUSTADA: Verifica se já acessou antes
     function irParaPaginaIntegracao() {
-        document.getElementById('modalSenhaIntegracao').classList.add('aberto');
-        document.getElementById('senhaIntegracao').value = '';
+        const jaAcessou = localStorage.getItem('financo_acesso_integracao');
+        if (jaAcessou === 'autorizado') {
+            // Se já acessou, vai direto
+            window.location.href = 'integracao.html';
+        } else {
+            // Se é primeiro acesso, pede senha
+            document.getElementById('modalSenhaIntegracao').classList.add('aberto');
+            document.getElementById('senhaIntegracao').value = '';
+        }
     }
 
     function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
@@ -451,7 +457,6 @@
 
     function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
 
-    // FUNÇÕES NOVAS PARA A VALIDAÇÃO DE SENHA
     function fecharModalSenha() {
         document.getElementById('modalSenhaIntegracao').classList.remove('aberto');
     }
@@ -462,10 +467,14 @@
             alert('A senha deve ter exatamente 16 caracteres!');
             return;
         }
+        // Marca que o usuário já autorizou para não pedir mais
+        localStorage.setItem('financo_acesso_integracao', 'autorizado');
         window.location.href = 'integracao.html';
     }
 
     function irPrimeiroAcesso() {
+        // Também marca como autorizado se usar o primeiro acesso
+        localStorage.setItem('financo_acesso_integracao', 'autorizado');
         window.location.href = 'infocash.html';
     }
 
