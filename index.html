@@ -120,6 +120,7 @@
     const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
     const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
     const TABELA_SUPABASE = 'financo_dados';
+    const SENHA_PADRAO_INTEGRACAO = '7846zxcv@#A12026';
     let supabase;
 
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
@@ -269,7 +270,7 @@
     <div class="conteudo-modal">
         <h3>🔐 Acesso à Integração</h3>
         <div class="campo" style="margin: 1.5rem 0;">
-            <label>Informe sua senha de acesso (16 caracteres)</label>
+            <label>Informe sua senha de acesso</label>
             <input type="text" id="senhaIntegracao" maxlength="16" placeholder="Digite a senha">
         </div>
         <div class="linha" style="margin-top: 1rem;">
@@ -411,14 +412,11 @@
         window.scrollTo(0,0);
     }
 
-    // REGRA AJUSTADA: Verifica se já acessou antes
     function irParaPaginaIntegracao() {
         const jaAcessou = localStorage.getItem('financo_acesso_integracao');
         if (jaAcessou === 'autorizado') {
-            // Se já acessou, vai direto
             window.location.href = 'integracao.html';
         } else {
-            // Se é primeiro acesso, pede senha
             document.getElementById('modalSenhaIntegracao').classList.add('aberto');
             document.getElementById('senhaIntegracao').value = '';
         }
@@ -463,17 +461,15 @@
 
     function verificarSenhaIntegracao() {
         const senha = document.getElementById('senhaIntegracao').value.trim();
-        if (senha.length !== 16) {
-            alert('A senha deve ter exatamente 16 caracteres!');
+        if (senha !== SENHA_PADRAO_INTEGRACAO) {
+            alert('Senha incorreta! Verifique e tente novamente.');
             return;
         }
-        // Marca que o usuário já autorizou para não pedir mais
         localStorage.setItem('financo_acesso_integracao', 'autorizado');
         window.location.href = 'integracao.html';
     }
 
     function irPrimeiroAcesso() {
-        // Também marca como autorizado se usar o primeiro acesso
         localStorage.setItem('financo_acesso_integracao', 'autorizado');
         window.location.href = 'infocash.html';
     }
