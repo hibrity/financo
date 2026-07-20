@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financo - Valores e Acesso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primario: '#00B85C',
+                        primarioEscuro: '#00964A',
+                        destaque: '#FFD600',
+                        textoEscuro: '#1A1A1A',
+                        textoClaro: '#333333',
+                        card: '#FFFFFF',
+                        neon: '#00FF88'
+                    },
+                    fontFamily: { sans: ['Inter', 'Arial', 'sans-serif'] },
+                    boxShadow: {
+                        'neon': '0 0 30px rgba(0, 255, 136, 0.4)',
+                        'card-neon': '0 8px 30px rgba(0, 184, 92, 0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #00FF88 0%, #00CC6E 50%, #009952 100%); 
+            min-height: 100vh; 
+        }
+        .logo-animado { animation: brilho 2s infinite ease-in-out; }
+        @keyframes brilho {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 35px rgba(255, 255, 255, 0.8); }
+        }
+        .card-principal { transition: all 0.4s ease; }
+        .card-principal:hover { transform: translateY(-5px); box-shadow: 0 15px 45px rgba(0, 255, 136, 0.5); }
+        .botao-principal { transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .botao-principal::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        .botao-principal:hover::after { left: 100%; }
+        .botao-principal:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(255, 214, 0, 0.4); }
+        .input-personalizado { transition: all 0.3s ease; border-width: 2px; }
+        .input-personalizado:focus { border-color: #00FF88; box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.2); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="container mx-auto px-4 py-12 max-w-2xl">
+        
+        <!-- Cabeçalho Ajustado -->
+        <header class="text-center mb-12">
+            <div class="logo-animado inline-flex items-center justify-center w-16 h-16 rounded-full bg-white text-primario text-2xl mb-4 shadow-neon">
+                <i class="fa fa-line-chart"></i>
+            </div>
+            <div class="bg-white/95 rounded-xl p-5 shadow-card-neon mb-4">
+                <p class="textoClaro text-lg mb-2">🔑 Primeiro acesso: <strong class="text-destaque text-xl font-bold">R$ 30,00</strong></p>
+                <p class="textoClaro">Demais meses: apenas <strong class="text-primario font-semibold">0,02%</strong> sobre o seu faturamento mensal</p>
+            </div>
+        </header>
+
+        <!-- Card da Calculadora -->
+        <section class="card-principal bg-white/98 rounded-2xl p-8 shadow-card-neon border border-white/50">
+            <h2 class="text-2xl font-bold text-center textoEscuro mb-2">🧮 Calcule seus valores</h2>
+            <p class="text-center text-gray-600 mb-8">Informe abaixo o seu faturamento diário médio</p>
+            
+            <div class="mb-8">
+                <label for="faturamento_diario" class="block textoClaro font-semibold mb-3">Faturamento diário (R$)</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xl font-medium">R$</span>
+                    <input type="text" id="faturamento_diario" placeholder="0,00" inputmode="numeric" 
+                        class="input-personalizado w-full pl-12 pr-4 py-5 text-xl rounded-xl bg-gray-50 border-gray-300 outline-none">
+                </div>
+            </div>
+
+            <button onclick="calcularTaxa()" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-5 rounded-xl text-lg transition-all shadow-md mb-8">
+                <i class="fa fa-calculator mr-2"></i> Ver valores completos
+            </button>
+
+            <!-- Área de Resultados -->
+            <div id="resultado_final" class="hidden space-y-5">
+                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <p class="text-gray-500 text-sm mb-1">Faturamento mensal estimado</p>
+                    <p id="valor_mensal" class="text-2xl font-bold textoEscuro"></p>
+                </div>
+
+                <div class="bg-amber-50 rounded-xl p-5 border border-amber-200">
+                    <p class="text-amber-700 text-sm mb-1">Valor de liberação (1º acesso)</p>
+                    <p class="text-2xl font-bold text-amber-600">R$ 30,00</p>
+                </div>
+
+                <div class="bg-green-50 rounded-xl p-5 border border-green-200">
+                    <p class="text-green-700 text-sm mb-2">Após o primeiro mês, incide <strong>0,02% sobre o faturamento total</strong></p>
+                    <p class="text-lg font-semibold textoClaro">Sua mensalidade será de:</p>
+                    <p id="valor_mensalidade" class="text-2xl font-bold text-primario mt-1"></p>
+                </div>
+
+                <!-- Botão Principal Chamativo -->
+                <button onclick="window.location.href='pay.html'" class="botao-principal w-full bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg mt-4">
+                    <i class="fa fa-unlock-alt mr-2"></i> Solicitar Meu Acesso Agora
+                </button>
+            </div>
+        </section>
+
+        <!-- Rodapé -->
+        <footer class="text-center text-white/90 text-sm mt-12 pb-6 drop-shadow">
+            <p>© 2026 Financo • Pagamento 100% Seguro • Sem Surpresas</p>
+        </footer>
+    </div>
+
+    <script>
+        const DIAS_MES = 30;
+        const TAXA_UNICA = 0.0002;
+        const campoValor = document.getElementById('faturamento_diario');
+
+        // Formatação automática no campo
+        campoValor.addEventListener('input', function() {
+            let valor = this.value.replace(/\D/g, '');
+            valor = Number(valor) / 100;
+            if (isNaN(valor)) { this.value = ''; return; }
+            this.value = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
+
+        function calcularTaxa() {
+            let valorTexto = campoValor.value.replace(/\./g, '').replace(',', '.');
+            const diario = parseFloat(valorTexto);
+            if (isNaN(diario) || diario < 0) {
+                alert('Por favor, insira um valor válido maior que zero.');
+                return;
+            }
+            const faturamentoMensal = diario * DIAS_MES;
+            const valorMensalidade = faturamentoMensal * TAXA_UNICA;
+
+            document.getElementById('valor_mensal').textContent = `R$ ${faturamentoMensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('valor_mensalidade').textContent = `R$ ${valorMensalidade.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('resultado_final').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
