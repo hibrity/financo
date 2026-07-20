@@ -218,7 +218,6 @@
 </div>
 
 <div class="pagina" id="paginaExportar">
-    <!-- ALTERAÇÃO AQUI: onclick direto sem função intermediária -->
     <div class="cabecalho-pagina">
         <button class="btn voltar" style="width: auto;" onclick="window.location.href='inicio.html'; return false;">⬅️ Voltar</button>
         <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
@@ -262,6 +261,24 @@
         <div class="linha" style="margin-top: 1rem;">
             <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
             <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- NOVO MODAL DE SENHA DA INTEGRAÇÃO -->
+<div class="modal" id="modalSenhaIntegracao">
+    <div class="conteudo-modal">
+        <h3>🔐 Acesso à Integração</h3>
+        <div class="campo" style="margin: 1.5rem 0;">
+            <label>Informe sua senha de acesso (16 caracteres)</label>
+            <input type="text" id="senhaIntegracao" maxlength="16" placeholder="Digite a senha">
+        </div>
+        <div class="linha" style="margin-top: 1rem;">
+            <button class="btn secundario" style="flex:1;" onclick="fecharModalSenha()">❌ Cancelar</button>
+            <button class="btn primario" style="flex:1;" onclick="verificarSenhaIntegracao()">✅ Confirmar</button>
+        </div>
+        <div style="margin-top: 1rem; text-align: center;">
+            <button class="btn aviso pequeno" onclick="irPrimeiroAcesso()">🔑 Primeiro Acesso</button>
         </div>
     </div>
 </div>
@@ -394,9 +411,14 @@
         atualizarPaginaExportar();
         window.scrollTo(0,0);
     }
-    function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
+
+    // FUNÇÃO ALTERADA: Agora abre a tela de senha ao invés de ir direto
+    function irParaPaginaIntegracao() {
+        document.getElementById('modalSenhaIntegracao').classList.add('aberto');
+        document.getElementById('senhaIntegracao').value = '';
+    }
+
     function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
-    // Removi a função voltarParaPrincipal para evitar conflitos
 
     function atualizarPaginaExportar() {
         const tab = document.getElementById('tabelaExportar');
@@ -428,6 +450,24 @@
     }
 
     function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
+
+    // FUNÇÕES NOVAS PARA A VALIDAÇÃO DE SENHA
+    function fecharModalSenha() {
+        document.getElementById('modalSenhaIntegracao').classList.remove('aberto');
+    }
+
+    function verificarSenhaIntegracao() {
+        const senha = document.getElementById('senhaIntegracao').value.trim();
+        if (senha.length !== 16) {
+            alert('A senha deve ter exatamente 16 caracteres!');
+            return;
+        }
+        window.location.href = 'integracao.html';
+    }
+
+    function irPrimeiroAcesso() {
+        window.location.href = 'infocash.html';
+    }
 
     function salvarEdicao() {
         const ehVenda = document.getElementById('edtVenda').checked;
