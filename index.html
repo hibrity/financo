@@ -120,7 +120,6 @@
     const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
     const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
     const TABELA_SUPABASE = 'financo_dados';
-    const SENHA_PADRAO_INTEGRACAO = '7846zxcv@#A12026';
     let supabase;
 
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
@@ -153,7 +152,8 @@
         </div>
         <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
         <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
-        <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
+        <!-- ALTERADO: Agora leva direto para infocash.html -->
+        <button class="btn secundario" onclick="window.location.href='infocash.html'">🔗 Integração</button>
         <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
         <button class="btn aviso pequeno" onclick="carregarDoSupabase()">☁️ Carregar da Nuvem</button>
     </div>
@@ -262,23 +262,6 @@
         <div class="linha" style="margin-top: 1rem;">
             <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
             <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="modalSenhaIntegracao">
-    <div class="conteudo-modal">
-        <h3>🔐 Acesso à Integração</h3>
-        <div class="campo" style="margin: 1.5rem 0;">
-            <label>Informe sua senha de acesso</label>
-            <input type="text" id="senhaIntegracao" maxlength="16" placeholder="Digite a senha">
-        </div>
-        <div class="linha" style="margin-top: 1rem;">
-            <button class="btn secundario" style="flex:1;" onclick="fecharModalSenha()">❌ Cancelar</button>
-            <button class="btn primario" style="flex:1;" onclick="verificarSenhaIntegracao()">✅ Confirmar</button>
-        </div>
-        <div style="margin-top: 1rem; text-align: center;">
-            <button class="btn aviso pequeno" onclick="irPrimeiroAcesso()">🔑 Primeiro Acesso</button>
         </div>
     </div>
 </div>
@@ -412,16 +395,6 @@
         window.scrollTo(0,0);
     }
 
-    function irParaPaginaIntegracao() {
-        const jaAcessou = localStorage.getItem('financo_acesso_integracao');
-        if (jaAcessou === 'autorizado') {
-            window.location.href = 'integracao.html';
-        } else {
-            document.getElementById('modalSenhaIntegracao').classList.add('aberto');
-            document.getElementById('senhaIntegracao').value = '';
-        }
-    }
-
     function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
 
     function atualizarPaginaExportar() {
@@ -454,25 +427,6 @@
     }
 
     function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
-
-    function fecharModalSenha() {
-        document.getElementById('modalSenhaIntegracao').classList.remove('aberto');
-    }
-
-    function verificarSenhaIntegracao() {
-        const senha = document.getElementById('senhaIntegracao').value.trim();
-        if (senha !== SENHA_PADRAO_INTEGRACAO) {
-            alert('Senha incorreta! Verifique e tente novamente.');
-            return;
-        }
-        localStorage.setItem('financo_acesso_integracao', 'autorizado');
-        window.location.href = 'integracao.html';
-    }
-
-    function irPrimeiroAcesso() {
-        localStorage.setItem('financo_acesso_integracao', 'autorizado');
-        window.location.href = 'infocash.html';
-    }
 
     function salvarEdicao() {
         const ehVenda = document.getElementById('edtVenda').checked;
