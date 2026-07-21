@@ -110,7 +110,6 @@
                     <p id="valor_mensalidade" class="text-2xl font-bold text-primario mt-1"></p>
                 </div>
 
-                <!-- Botão Alterado -->
                 <a href="#" id="link_pagamento" target="_blank"
                     class="botao-principal block w-full text-center bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg">
                     <i class="fa fa-lock mr-2"></i> PAGAR
@@ -130,16 +129,15 @@
                     <p class="textoClaro text-lg leading-relaxed mb-4">
                         Aguarde, em até 48 horas entraremos em contato para fazer o processo de integração.
                     </p>
-                    <p class="text-gray-500 text-sm">Você será redirecionado automaticamente em alguns segundos...</p>
+                    <p class="text-gray-500 text-sm">Redirecionando para a página inicial em 5 segundos...</p>
                 </div>
 
                 <button onclick="window.location.href='https://hibrity.github.io/financo/'" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-4 rounded-xl text-lg transition-all">
-                    <i class="fa fa-home mr-2"></i> Voltar ao Início Agora
+                    <i class="fa fa-home mr-2"></i> Voltar Agora
                 </button>
             </div>
         </section>
 
-        <!-- Rodapé -->
         <footer class="text-center text-white/90 text-sm mt-12 pb-6 drop-shadow">
             <p>© 2026 Financo • Pagamento processado via InfinitoPay • Ambiente Seguro</p>
         </footer>
@@ -150,43 +148,48 @@
         const TAXA_UNICA = 0.0002;
         const VALOR_LIBERACAO = 30.00;
         const URL_INICIO = 'https://hibrity.github.io/financo/';
-
-        // 🚨 CONFIGURAÇÕES - EDITE AQUI!
         const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/8Z8v0Q5N1X';
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const TABELA_PAGAMENTOS = 'pagamentos_acesso';
 
-        // Elementos
         const campoFaturamento = document.getElementById('faturamento_diario');
         let supabase;
 
-        // Inicia Supabase
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
         } catch (erro) {
             console.error('Erro Supabase:', erro);
         }
 
-        // Máscara para valores
         campoFaturamento.addEventListener('input', function() {
             let v = this.value.replace(/\D/g, '');
             v = Number(v) / 100;
             this.value = isNaN(v) ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
         });
 
-        // Verifica se voltou do pagamento e ativa redirecionamento automático
-        window.addEventListener('load', () => {
+        // ✅ VERIFICAÇÃO GARANTIDA
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlCompleta = window.location.href;
             const params = new URLSearchParams(window.location.search);
-            // Aceita tanto status=sucesso quanto os parâmetros padrão do InfinitoPay
-            const sucesso = params.get('status') === 'sucesso' || params.get('paymentStatus') === 'approved' || params.get('status') === 'approved';
-            
-            if (sucesso) {
+
+            // Verifica de TODAS as formas possíveis
+            const deuCerto = 
+                params.get('status') === 'sucesso' ||
+                params.get('status') === 'aprovado' ||
+                params.get('status') === 'approved' ||
+                params.get('paymentStatus') === 'approved' ||
+                urlCompleta.includes('status=sucesso');
+
+            console.log('URL acessada:', urlCompleta);
+            console.log('Pagamento confirmado:', deuCerto);
+
+            if (deuCerto) {
                 document.getElementById('area_formulario').classList.add('hidden');
                 document.getElementById('area_pagamento').classList.add('hidden');
                 document.getElementById('area_sucesso').classList.remove('hidden');
 
-                // ⚡ REDIRECIONAMENTO AUTOMÁTICO em 5 segundos
+                // Redirecionamento automático
                 setTimeout(() => {
                     window.location.href = URL_INICIO;
                 }, 5000);
@@ -194,21 +197,17 @@
         });
 
         async function calcularEPreparar() {
-            // Valida campos
             let txtFat = campoFaturamento.value.replace(/\./g, '').replace(',', '.');
             let numFat = parseFloat(txtFat);
 
             if (!numFat || numFat <= 0) return alert('Informe o faturamento diário corretamente.');
 
-            // Cálculos
             let mensal = numFat * DIAS_MES;
             let valorMensalidade = mensal * TAXA_UNICA;
 
-            // Mostra resumo
             document.getElementById('valor_mensal').textContent = `R$ ${mensal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             document.getElementById('valor_mensalidade').textContent = `R$ ${valorMensalidade.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
-            // Salva temporariamente no Supabase
             try {
                 await supabase.from(TABELA_PAGAMENTOS).insert([{
                     data: new Date().toLocaleString('pt-BR'),
@@ -219,10 +218,7 @@
                 }]);
             } catch(e) { console.error('Erro ao salvar:', e); }
 
-            // Atualiza link de pagamento
             document.getElementById('link_pagamento').href = LINK_INFINITOPAY;
-
-            // Troca telas
             document.getElementById('area_formulario').classList.add('hidden');
             document.getElementById('area_pagamento').classList.remove('hidden');
         }
