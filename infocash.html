@@ -127,13 +127,14 @@
                 <div class="bg-sucesso/10 border-2 border-sucesso rounded-xl p-8 text-center">
                     <i class="fa fa-check-circle text-5xl text-sucesso mb-4"></i>
                     <h3 class="text-2xl font-bold text-sucesso mb-3">Pagamento Recebido!</h3>
-                    <p class="textoClaro text-lg leading-relaxed">
+                    <p class="textoClaro text-lg leading-relaxed mb-4">
                         Aguarde, em até 48 horas entraremos em contato para fazer o processo de integração.
                     </p>
+                    <p class="text-gray-500 text-sm">Você será redirecionado automaticamente em alguns segundos...</p>
                 </div>
 
                 <button onclick="window.location.href='https://hibrity.github.io/financo/'" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-4 rounded-xl text-lg transition-all">
-                    <i class="fa fa-home mr-2"></i> Voltar ao Início
+                    <i class="fa fa-home mr-2"></i> Voltar ao Início Agora
                 </button>
             </div>
         </section>
@@ -148,9 +149,10 @@
         const DIAS_MES = 30;
         const TAXA_UNICA = 0.0002;
         const VALOR_LIBERACAO = 30.00;
+        const URL_INICIO = 'https://hibrity.github.io/financo/';
 
         // 🚨 CONFIGURAÇÕES - EDITE AQUI!
-        const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/8Z8v0Q5N1X'; // seu link real
+        const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/8Z8v0Q5N1X';
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const TABELA_PAGAMENTOS = 'pagamentos_acesso';
@@ -173,13 +175,21 @@
             this.value = isNaN(v) ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
         });
 
-        // Verifica se voltou do pagamento
+        // Verifica se voltou do pagamento e ativa redirecionamento automático
         window.addEventListener('load', () => {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('status') === 'sucesso') {
+            // Aceita tanto status=sucesso quanto os parâmetros padrão do InfinitoPay
+            const sucesso = params.get('status') === 'sucesso' || params.get('paymentStatus') === 'approved' || params.get('status') === 'approved';
+            
+            if (sucesso) {
                 document.getElementById('area_formulario').classList.add('hidden');
                 document.getElementById('area_pagamento').classList.add('hidden');
                 document.getElementById('area_sucesso').classList.remove('hidden');
+
+                // ⚡ REDIRECIONAMENTO AUTOMÁTICO em 5 segundos
+                setTimeout(() => {
+                    window.location.href = URL_INICIO;
+                }, 5000);
             }
         });
 
