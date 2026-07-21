@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financo - Webhook InfinitoPay</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
+</head>
+<body style="display: none;">
+    <script>
+        // ⚠️ Dados do seu Supabase
+        const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
+        const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
+        const TABELA = 'pagamentos_acesso';
+
+        // Inicializa
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+
+        // Função que processa o que chegar do InfinitoPay
+        async function processarPagamento(dadosPagamento) {
+            try {
+                // Dados recebidos do gateway
+                const {
+                    id,
+                    status,
+                    valor,
+                    data_pagamento,
+                    referencia_externa // usamos para ligar ao seu cadastro
+                } = dadosPagamento;
+
+                console.log('Recebido do InfinitoPay:', dadosPagamento);
+
+                // Atualiza registro no Supabase
+                const { error } = await supabase
+                    .from(TABELA)
+                    .update({
+                        status: status === 'aprovado' ? 'aprovado' : status,
+                        id_transacao: id,
+                        data_confirmacao: new Date().toLocaleString('pt-BR'),
+                        valor_recebido: valor
+                    })
+                    .eq('referencia_externa', referencia_externa);
+
+                if (error) throw error;
+
+                console.log('✅ Status atualizado no Financo!');
+                return { sucesso: true };
+
+            } catch (erro) {
+                console.error('❌ Erro no webhook:', erro);
+                return { sucesso: false, erro: erro.message };
+            }
+        }
+
+        // O InfinitoPay geralmente envia via POST — aqui capturamos
+        document.addEventListener('DOMContentLoaded', () => {
+            // Em ambiente real de servidor, receberia req.body
+            // Este código está preparado para quando estiver hospedado
+            const dadosRecebidos = window.location.search 
+                ? Object.fromEntries(new URLSearchParams(window.location.search))
+                : {};
+            
+            if (Object.keys(dadosRecebidos).length > 0) {
+                processarPagamento(dadosRecebidos);
+            }
+        });
+    </script>
+</body>
+</html>
