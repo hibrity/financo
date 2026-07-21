@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financo - Valores e Acesso</title>
+    <title>Financo - Pagamento e Acesso</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -17,7 +18,9 @@
                         textoEscuro: '#1A1A1A',
                         textoClaro: '#333333',
                         card: '#FFFFFF',
-                        neon: '#00FF88'
+                        neon: '#00FF88',
+                        sucesso: '#10B981',
+                        erro: '#EF4444'
                     },
                     fontFamily: { sans: ['Inter', 'Arial', 'sans-serif'] },
                     boxShadow: {
@@ -57,7 +60,7 @@
 <body class="font-sans">
     <div class="container mx-auto px-4 py-12 max-w-2xl">
         
-        <!-- Cabeçalho Ajustado -->
+        <!-- Cabeçalho -->
         <header class="text-center mb-12">
             <div class="logo-animado inline-flex items-center justify-center w-16 h-16 rounded-full bg-white text-primario text-2xl mb-4 shadow-neon">
                 <i class="fa fa-line-chart"></i>
@@ -68,81 +71,150 @@
             </div>
         </header>
 
-        <!-- Card da Calculadora -->
+        <!-- Card Principal -->
         <section class="card-principal bg-white/98 rounded-2xl p-8 shadow-card-neon border border-white/50">
-            <h2 class="text-2xl font-bold text-center textoEscuro mb-2">🧮 Calcule seus valores</h2>
-            <p class="text-center text-gray-600 mb-8">Informe abaixo o seu faturamento diário médio</p>
+            <h2 class="text-2xl font-bold text-center textoEscuro mb-2">🧮 Calcule e Garanta Seu Acesso</h2>
+            <p class="text-center text-gray-600 mb-8">Informe seus dados abaixo</p>
             
-            <div class="mb-8">
-                <label for="faturamento_diario" class="block textoClaro font-semibold mb-3">Faturamento diário (R$)</label>
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xl font-medium">R$</span>
-                    <input type="text" id="faturamento_diario" placeholder="0,00" inputmode="numeric" 
-                        class="input-personalizado w-full pl-12 pr-4 py-5 text-xl rounded-xl bg-gray-50 border-gray-300 outline-none">
+            <!-- Área de Cálculo e Dados -->
+            <div id="area_formulario">
+                <div class="mb-8">
+                    <label for="faturamento_diario" class="block textoClaro font-semibold mb-3">Faturamento diário médio (R$)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xl font-medium">R$</span>
+                        <input type="text" id="faturamento_diario" placeholder="0,00" inputmode="numeric" 
+                            class="input-personalizado w-full pl-12 pr-4 py-4 text-lg rounded-xl bg-gray-50 border-gray-300 outline-none">
+                    </div>
                 </div>
+
+                <button onclick="calcularEPreparar()" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-5 rounded-xl text-lg transition-all shadow-md mb-8">
+                    <i class="fa fa-calculator mr-2"></i> Ver Valor e Ir para Pagamento
+                </button>
             </div>
 
-            <button onclick="calcularTaxa()" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-5 rounded-xl text-lg transition-all shadow-md mb-8">
-                <i class="fa fa-calculator mr-2"></i> Ver valores completos
-            </button>
-
-            <!-- Área de Resultados -->
-            <div id="resultado_final" class="hidden space-y-5">
+            <!-- Área de Resumo e Pagamento -->
+            <div id="area_pagamento" class="hidden space-y-5">
                 <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
                     <p class="text-gray-500 text-sm mb-1">Faturamento mensal estimado</p>
                     <p id="valor_mensal" class="text-2xl font-bold textoEscuro"></p>
                 </div>
 
                 <div class="bg-amber-50 rounded-xl p-5 border border-amber-200">
-                    <p class="text-amber-700 text-sm mb-1">Valor de liberação (1º acesso)</p>
+                    <p class="text-amber-700 text-sm mb-1">Valor único de liberação</p>
                     <p class="text-2xl font-bold text-amber-600">R$ 30,00</p>
                 </div>
 
-                <div class="bg-green-50 rounded-xl p-5 border border-green-200">
-                    <p class="text-green-700 text-sm mb-2">Após o primeiro mês, incide <strong>0,02% sobre o faturamento total</strong></p>
-                    <p class="text-lg font-semibold textoClaro">Sua mensalidade será de:</p>
+                <div class="bg-green-50 rounded-xl p-5 border border-green-200 mb-8">
+                    <p class="text-green-700 text-sm mb-2">Após o primeiro mês: <strong>0,02% sobre o faturamento</strong></p>
+                    <p class="text-lg font-semibold textoClaro">Mensalidade estimada:</p>
                     <p id="valor_mensalidade" class="text-2xl font-bold text-primario mt-1"></p>
                 </div>
 
-                <!-- Botão Principal Chamativo -->
-                <button onclick="window.location.href='pay.html'" class="botao-principal w-full bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg mt-4">
-                    <i class="fa fa-unlock-alt mr-2"></i> Solicitar Meu Acesso Agora
+                <!-- Botão Alterado -->
+                <a href="#" id="link_pagamento" target="_blank"
+                    class="botao-principal block w-full text-center bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg">
+                    <i class="fa fa-lock mr-2"></i> PAGAR
+                </a>
+
+                <p class="text-center text-gray-500 text-sm mt-4">
+                    Você será redirecionado para o ambiente seguro do InfinitoPay<br>
+                    Aceitamos Pix e Cartão de Crédito
+                </p>
+            </div>
+
+            <!-- Área de Retorno/Sucesso -->
+            <div id="area_sucesso" class="hidden space-y-5 mt-6">
+                <div class="bg-sucesso/10 border-2 border-sucesso rounded-xl p-8 text-center">
+                    <i class="fa fa-check-circle text-5xl text-sucesso mb-4"></i>
+                    <h3 class="text-2xl font-bold text-sucesso mb-3">Pagamento Recebido!</h3>
+                    <p class="textoClaro text-lg leading-relaxed">
+                        Em até <strong>48 horas</strong> um consultor entrará em contato para iniciar e liberar o seu acesso completo ao sistema Financo.
+                    </p>
+                </div>
+
+                <button onclick="window.location.href='index.html'" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-4 rounded-xl text-lg transition-all">
+                    <i class="fa fa-home mr-2"></i> Voltar ao Início
                 </button>
             </div>
         </section>
 
         <!-- Rodapé -->
         <footer class="text-center text-white/90 text-sm mt-12 pb-6 drop-shadow">
-            <p>© 2026 Financo • Pagamento 100% Seguro • Sem Surpresas</p>
+            <p>© 2026 Financo • Pagamento processado via InfinitoPay • Ambiente Seguro</p>
         </footer>
     </div>
 
     <script>
         const DIAS_MES = 30;
         const TAXA_UNICA = 0.0002;
-        const campoValor = document.getElementById('faturamento_diario');
+        const VALOR_LIBERACAO = 30.00;
 
-        // Formatação automática no campo
-        campoValor.addEventListener('input', function() {
-            let valor = this.value.replace(/\D/g, '');
-            valor = Number(valor) / 100;
-            if (isNaN(valor)) { this.value = ''; return; }
-            this.value = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // 🚨 CONFIGURAÇÕES - EDITE AQUI!
+        const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/8Z8v0Q5N1X'; // seu link real
+        const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
+        const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
+        const TABELA_PAGAMENTOS = 'pagamentos_acesso';
+
+        // Elementos
+        const campoFaturamento = document.getElementById('faturamento_diario');
+        let supabase;
+
+        // Inicia Supabase
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
+        } catch (erro) {
+            console.error('Erro Supabase:', erro);
+        }
+
+        // Máscara para valores
+        campoFaturamento.addEventListener('input', function() {
+            let v = this.value.replace(/\D/g, '');
+            v = Number(v) / 100;
+            this.value = isNaN(v) ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
         });
 
-        function calcularTaxa() {
-            let valorTexto = campoValor.value.replace(/\./g, '').replace(',', '.');
-            const diario = parseFloat(valorTexto);
-            if (isNaN(diario) || diario < 0) {
-                alert('Por favor, insira um valor válido maior que zero.');
-                return;
+        // Verifica se voltou do pagamento
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('status') === 'sucesso') {
+                document.getElementById('area_formulario').classList.add('hidden');
+                document.getElementById('area_pagamento').classList.add('hidden');
+                document.getElementById('area_sucesso').classList.remove('hidden');
             }
-            const faturamentoMensal = diario * DIAS_MES;
-            const valorMensalidade = faturamentoMensal * TAXA_UNICA;
+        });
 
-            document.getElementById('valor_mensal').textContent = `R$ ${faturamentoMensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('valor_mensalidade').textContent = `R$ ${valorMensalidade.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('resultado_final').classList.remove('hidden');
+        async function calcularEPreparar() {
+            // Valida campos
+            let txtFat = campoFaturamento.value.replace(/\./g, '').replace(',', '.');
+            let numFat = parseFloat(txtFat);
+
+            if (!numFat || numFat <= 0) return alert('Informe o faturamento diário corretamente.');
+
+            // Cálculos
+            let mensal = numFat * DIAS_MES;
+            let valorMensalidade = mensal * TAXA_UNICA;
+
+            // Mostra resumo
+            document.getElementById('valor_mensal').textContent = `R$ ${mensal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            document.getElementById('valor_mensalidade').textContent = `R$ ${valorMensalidade.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            
+            // Salva temporariamente no Supabase
+            try {
+                await supabase.from(TABELA_PAGAMENTOS).insert([{
+                    data: new Date().toLocaleString('pt-BR'),
+                    faturamento_diario: numFat,
+                    faturamento_mensal: mensal,
+                    valor: VALOR_LIBERACAO,
+                    status: 'pendente'
+                }]);
+            } catch(e) { console.error('Erro ao salvar:', e); }
+
+            // Atualiza link de pagamento
+            document.getElementById('link_pagamento').href = LINK_INFINITOPAY;
+
+            // Troca telas
+            document.getElementById('area_formulario').classList.add('hidden');
+            document.getElementById('area_pagamento').classList.remove('hidden');
         }
     </script>
 </body>
