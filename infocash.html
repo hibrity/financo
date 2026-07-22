@@ -148,7 +148,7 @@
         const TAXA_UNICA = 0.0002;
         const VALOR_LIBERACAO = 30.00;
         const URL_INICIO = 'https://hibrity.github.io/financo/';
-        const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/8Z8v0Q5N1X';
+        const LINK_INFINITOPAY = 'https://checkout.infinitepay.io/hibrity/G3q2Kjgmm2';
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
         const TABELA_PAGAMENTOS = 'pagamentos_acesso';
@@ -168,12 +168,11 @@
             this.value = isNaN(v) ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
         });
 
-        // ✅ VERIFICAÇÃO GARANTIDA
+        // Verificação garantida
         window.addEventListener('DOMContentLoaded', () => {
             const urlCompleta = window.location.href;
             const params = new URLSearchParams(window.location.search);
 
-            // Verifica de TODAS as formas possíveis
             const deuCerto = 
                 params.get('status') === 'sucesso' ||
                 params.get('status') === 'aprovado' ||
@@ -189,7 +188,6 @@
                 document.getElementById('area_pagamento').classList.add('hidden');
                 document.getElementById('area_sucesso').classList.remove('hidden');
 
-                // Redirecionamento automático
                 setTimeout(() => {
                     window.location.href = URL_INICIO;
                 }, 5000);
