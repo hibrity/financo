@@ -55,12 +55,6 @@
         .input-personalizado { transition: all 0.3s ease; border-width: 2px; }
         .input-personalizado:focus { border-color: #00FF88; box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.2); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-        /* Estilos do modal */
-        .modal-fundo { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 1rem; }
-        .modal-corpo { background: white; border-radius: 16px; width: 100%; max-width: 520px; height: 90vh; max-height: 720px; position: relative; overflow: hidden; }
-        .modal-fechar { position: absolute; top: 10px; right: 10px; z-index: 10; background: #ef4444; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .modal-iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body class="font-sans">
@@ -112,13 +106,15 @@
                     <p id="valor_mensalidade" class="text-2xl font-bold text-primario mt-1"></p>
                 </div>
 
-                <!-- Botão que abre dentro da página -->
-                <button onclick="abrirPagamento()" class="botao-principal w-full bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg">
+                <!-- VOLTOU A ABRIR EM NOVA ABA - GARANTIDO FUNCIONAR -->
+                <a href="https://checkout.infinitepay.io/hibrity/G3q2Kjgmm2" target="_blank"
+                    class="botao-principal block w-full text-center bg-destaque text-textoEscuro font-bold py-5 rounded-xl text-xl shadow-lg">
                     <i class="fa fa-lock mr-2"></i> PAGAR
-                </button>
+                </a>
 
                 <p class="text-center text-gray-500 text-sm mt-4">
-                    Se não abrir automaticamente, clique novamente ou permita janelas pop-up
+                    Você abrirá o ambiente seguro do InfinitoPay em uma nova aba<br>
+                    Após pagar, voltará automaticamente para cá
                 </p>
             </div>
 
@@ -129,21 +125,18 @@
                     <p class="textoClaro text-lg leading-relaxed mb-4">
                         Aguarde, em até 48 horas entraremos em contato para fazer o processo de integração.
                     </p>
-                    <p class="text-gray-500 text-sm">Redirecionando em 5 segundos...</p>
+                    <p class="text-gray-500 text-sm">Redirecionando para a página inicial em 5 segundos...</p>
                 </div>
-                <button onclick="window.location.href='https://hibrity.github.io/financo/'" class="w-full bg-primario py-4 rounded-xl text-white font-bold">
-                    Voltar Agora
+
+                <button onclick="window.location.href='https://hibrity.github.io/financo/'" class="w-full bg-primario hover:bg-primarioEscuro text-white font-bold py-4 rounded-xl text-lg transition-all">
+                    <i class="fa fa-home mr-2"></i> Voltar Agora
                 </button>
             </div>
         </section>
-    </div>
 
-    <!-- Modal de pagamento -->
-    <div id="modalPagamento" class="modal-fundo">
-        <div class="modal-corpo">
-            <button class="modal-fechar" onclick="fecharPagamento()">×</button>
-            <iframe id="pagamentoIframe" class="modal-iframe" src="" allowpaymentrequest></iframe>
-        </div>
+        <footer class="text-center text-white/90 text-sm mt-12 pb-6 drop-shadow">
+            <p>© 2026 Financo • Pagamento processado via InfinitoPay • Ambiente Seguro</p>
+        </footer>
     </div>
 
     <script>
@@ -151,71 +144,73 @@
         const TAXA_UNICA = 0.0002;
         const VALOR_LIBERACAO = 30.00;
         const URL_INICIO = 'https://hibrity.github.io/financo/';
-        const LINK_PAGAMENTO = 'https://checkout.infinitepay.io/hibrity/G3q2Kjgmm2';
         const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
         const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
-        const TABELA = 'pagamentos_acesso';
+        const TABELA_PAGAMENTOS = 'pagamentos_acesso';
 
-        const campoFat = document.getElementById('faturamento_diario');
-        const modal = document.getElementById('modalPagamento');
-        const iframe = document.getElementById('pagamentoIframe');
+        const campoFaturamento = document.getElementById('faturamento_diario');
         let supabase;
 
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-        } catch(e) { console.error(e); }
+        } catch (erro) {
+            console.error('Erro Supabase:', erro);
+        }
 
-        campoFat.addEventListener('input', () => {
-            let v = campoFat.value.replace(/\D/g,'');
-            v = Number(v)/100;
-            campoFat.value = isNaN(v)?'':v.toLocaleString('pt-BR',{minimumFractionDigits:2});
+        campoFaturamento.addEventListener('input', function() {
+            let v = this.value.replace(/\D/g, '');
+            v = Number(v) / 100;
+            this.value = isNaN(v) ? '' : v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
         });
 
-        function abrirPagamento() {
-            iframe.src = LINK_PAGAMENTO;
-            modal.style.display = 'flex';
-        }
-        function fecharPagamento() {
-            modal.style.display = 'none';
-            iframe.src = '';
-        }
+        // Verificação de sucesso mantida
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlCompleta = window.location.href;
+            const params = new URLSearchParams(window.location.search);
 
-        // Verifica retorno
-        window.addEventListener('load', () => {
-            const p = new URLSearchParams(window.location.search);
-            const ok = p.get('status')==='sucesso' || p.get('paymentStatus')==='approved';
-            if (ok) {
-                fecharPagamento();
+            const deuCerto = 
+                params.get('status') === 'sucesso' ||
+                params.get('status') === 'aprovado' ||
+                params.get('status') === 'approved' ||
+                params.get('paymentStatus') === 'approved' ||
+                urlCompleta.includes('status=sucesso');
+
+            if (deuCerto) {
                 document.getElementById('area_formulario').classList.add('hidden');
                 document.getElementById('area_pagamento').classList.add('hidden');
                 document.getElementById('area_sucesso').classList.remove('hidden');
-                setTimeout(()=>window.location.href=URL_INICIO,5000);
+
+                setTimeout(() => {
+                    window.location.href = URL_INICIO;
+                }, 5000);
             }
         });
 
         async function calcularEPreparar() {
-            let v = parseFloat(campoFat.value.replace(/\./g,'').replace(',','.'));
-            if (!v || v<=0) return alert('Informe o valor corretamente.');
+            let txtFat = campoFaturamento.value.replace(/\./g, '').replace(',', '.');
+            let numFat = parseFloat(txtFat);
 
-            let mensal = v*DIAS_MES;
-            let mensalidade = mensal*TAXA_UNICA;
+            if (!numFat || numFat <= 0) return alert('Informe o faturamento diário corretamente.');
 
-            document.getElementById('valor_mensal').textContent = `R$ ${mensal.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-            document.getElementById('valor_mensalidade').textContent = `R$ ${mensalidade.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+            let mensal = numFat * DIAS_MES;
+            let valorMensalidade = mensal * TAXA_UNICA;
 
+            document.getElementById('valor_mensal').textContent = `R$ ${mensal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            document.getElementById('valor_mensalidade').textContent = `R$ ${valorMensalidade.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            
             try {
-                await supabase.from(TABELA).insert([{
+                await supabase.from(TABELA_PAGAMENTOS).insert([{
                     data: new Date().toLocaleString('pt-BR'),
-                    faturamento_diario: v,
+                    faturamento_diario: numFat,
                     faturamento_mensal: mensal,
                     valor: VALOR_LIBERACAO,
                     status: 'pendente'
                 }]);
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error('Erro ao salvar:', e); }
 
             document.getElementById('area_formulario').classList.add('hidden');
             document.getElementById('area_pagamento').classList.remove('hidden');
         }
     </script>
 </body>
-</html>
+</html>   
