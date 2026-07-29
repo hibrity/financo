@@ -1,517 +1,688 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financo - Controle Financeiro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PagCheck - Acesso e Painel</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
-        html { background: #f5f5f5; }
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #f4f7f6; min-height: 100vh; padding: 15px; display: flex; flex-direction: column; }
+        .container { max-width: 100%; margin: 0 auto; width: 100%; flex: 1; }
+        .tela-acesso { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; }
+        .painel-card { 
+            background: white; 
+            padding: 30px 25px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+            width: 100%; 
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .logo-area { text-align: center; margin-bottom: 25px; width: 100%; }
+        .logo { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .logo-icone { width: 44px; height: 44px; }
+        .logo-texto { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin: 0; }
+        .logo-texto span { color: #2563eb; }
+        .slogan { color: #64748b; font-size: 0.9rem; margin-top: 6px; }
+        .tela-inicial { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            align-items: center;
+            width: 100%;
+        }
+        .btn-inicial { 
+            background: #2563eb; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            width: 100%; 
+            max-width: 220px; 
+            transition: background 0.2s;
+            margin: 0 auto !important;
+            display: block;
+        }
+        .btn-inicial:hover { background: #1d4ed8; }
+        .btn-secundario { background: #e2e8f0; color: #1e293b; }
+        .btn-secundario:hover { background: #cbd5e1; }
+        .area-formularios { 
+            display: none; 
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+        .voltar { 
+            display: none;
+            text-align: left; 
+            margin-bottom: 15px; 
+            width: 100%; 
+        }
+        .btn-voltar { background: none; border: none; color: #2563eb; font-size: 14px; cursor: pointer; padding: 0; }
+        .form-panel { 
+            display: none; 
+            width: 100%;
+        }
+        .form-panel.active { display: block; }
+        form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 6px 0; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            transition: border 0.2s; 
+        }
+        input:focus { outline: none; border-color: #2563eb; }
+        input[readonly] { background: #f9fafb; color: #4b5563; cursor: not-allowed; }
+        
+        button:not(.btn-voltar):not(.btn-inicial):not(.btn-relatorio):not(.btn-baixar):not(.btn-rodape) { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            margin-top: 8px;
+        }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { font-size: 16px; }
-        body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
-        .cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        h1 { color: #1565c0; font-size: 1.75rem; margin: 0; }
-        .btn-sair { display: none; }
-        .barra-botoes { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 0; min-width: 140px; max-width: 200px; }
-        .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; text-decoration: none; }
-        .btn.primario { background: #1565c0; color: white; }
-        .btn.primario:hover { background: #0d47a1; }
-        .btn.sucesso { background: #2e7d32; color: white; font-size: 1.05rem; padding: 1rem; }
-        .btn.sucesso:hover { background: #1b5e20; }
-        .btn.secundario { background: #e0e0e0; color: #333; }
-        .btn.secundario:hover { background: #bdbdbd; }
-        .btn.voltar { background: #616161; color: white; }
-        .btn.voltar:hover { background: #424242; }
-        .btn.perigo { background: #c62828; color: white; }
-        .btn.perigo:hover { background: #8e0000; }
-        .btn.pequeno { padding: 0.5rem; font-size: 0.85rem; }
-        .btn.aviso { background: #f57c00; color: white; }
-        .btn.aviso:hover { background: #ef6c00; }
+        .links { text-align: center; margin-top: 15px; width: 100%; }
+        .links a { color: #2563eb; text-decoration: none; font-size: 14px; }
+        .links a:hover { text-decoration: underline; }
+        .aviso { margin-top: 12px; padding: 10px; border-radius: 6px; display: none; font-size: 14px; font-weight: 500; width: 100%; text-align: center; }
+        .erro { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .sucesso { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .linha-dupla { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+        .linha-dupla input { flex: 1; min-width: 120px; }
+        .tela-painel { display: none; }
 
-        .area-continuar { display: none; margin: 2rem 0 3rem 0; text-align: center; }
-        .area-continuar.mostrar { display: block; }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #e5e7eb; 
+        }
+        .lado-esquerdo { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            gap: 4px; 
+            flex: 1 1 auto; 
+            min-width: 160px; 
+            text-align: center;
+        }
+        .logo-cabecalho { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .slogan-cabecalho { font-size: 0.85rem; color: #6b7280; font-weight: normal; margin: 0; text-align: center; }
+        .info-usuario { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            text-align: right; 
+            flex: 0 0 auto; 
+            min-width: 140px; 
+            max-width: 100%;
+            word-break: break-word;
+        }
+        .info-nome { font-size: 0.85rem; font-weight: 500; color: #4b5563; word-break: break-word; line-height: 1.3; }
+        .info-email { font-size: 0.75rem; color: #9ca3af; word-break: break-all; line-height: 1.3; }
 
-        .menu-gerenciar { display: none; position: absolute; background: white; border-radius: 0.5rem; box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.15); padding: 1rem; min-width: 17.5rem; max-width: 90vw; z-index: 100; margin-top: 0.3125rem; }
-        .menu-gerenciar.aberto { display: block; }
-        .grupo-lista { margin-bottom: 1rem; }
-        .grupo-lista h4 { font-size: 0.875rem; color: #444; margin-bottom: 0.5rem; }
-        .item-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.375rem 0; border-bottom: 1px solid #eee; }
-        .item-linha input { flex: 1; padding: 0.375rem; border: 1px solid #ddd; border-radius: 0.25rem; font-size: 0.875rem; min-width: 0; }
-        .btn-acao { padding: 0.25rem 0.5rem; font-size: 0.8125rem; border: none; border-radius: 0.25rem; cursor: pointer; flex-shrink: 0; }
-        .btn-acao.salvar { background: #2e7d32; color: white; }
-        .btn-acao.excluir { background: #c62828; color: white; }
-        .btn-acao.adicionar { background: #1565c0; color: white; margin-top: 0.5rem; width: 100%; }
+        .aviso-seguranca { background: #fffbeb; color: #92400e; padding: 12px; border-radius: 6px; border-left: 4px solid #f59e0b; width: 100%; max-width: 100%; margin: 0 0 20px 0; text-align: center; font-size: 0.9rem; }
+        .dinheiro-fisico { background: white; border-radius: 8px; padding: 15px; width: 100%; max-width: 100%; margin: 0 0 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .grupo { display: flex; gap: 12px; align-items: center; flex-wrap: nowrap; }
+        .dinheiro-fisico input { flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; margin: 0; }
+        .dinheiro-fisico button { 
+            width: 110px; 
+            padding: 12px 8px; 
+            background: #f59e0b; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+            font-size: 0.95rem; 
+            white-space: nowrap; 
+            flex-shrink: 0; 
+            margin-top: 0;
+        }
+        .dinheiro-fisico button:hover { background: #d97706; }
+        .aviso-dinheiro { margin-top: 10px; display: none; padding: 10px; border-radius: 6px; font-weight: 500; text-align: center; font-size: 0.9rem; }
+        .aviso-dinheiro.erro { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .aviso-dinheiro:not(.erro) { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
 
-        .form { background: white; padding: 0 1.25rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; }
-        .form.aberto { padding: 1.25rem; max-height: 1000px; opacity: 1; }
+        .resumo { background: white; border-radius: 8px; padding: 18px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); width: 100%; max-width: 100%; }
+        .resumo-cabecalho { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .resumo-cabecalho h4 { font-size: 1.1rem; color: #1f2937; }
+        .btn-relatorio { padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; width: auto; }
+        .btn-relatorio:hover { background: #15803d; }
+        .resumo-grade { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 0.95rem; }
+        .resumo-linha { display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+        .resumo-linha span:first-child { color: #4b5563; }
+        .resumo-valor-conf { font-weight: 600; color: #166534; }
+        .resumo-valor-agen { font-weight: 500; color: #f59e0b; }
+        .resumo-total { font-weight: 700; color: #1f2937; font-size: 1rem; }
 
-        .linha { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 0.9375rem; align-items: flex-end; }
-        .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3125rem; min-width: 0; }
-        label { font-size: 0.875rem; color: #333; font-weight: 500; }
-        input, select { padding: 0.625rem; border: 1px solid #ccc; border-radius: 0.375rem; font-size: 0.9375rem; background: white; }
-        input:focus, select:focus { outline: none; border-color: #1565c0; }
-        .tipo { display: flex; gap: 1rem; padding-top: 0.625rem; flex-wrap: wrap; }
-        .tipo label { white-space: nowrap; }
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; padding: 15px; }
+        .modal.aberto { display: flex; }
+        .modal-conteudo { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .modal-cabecalho { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+        .modal-cabecalho h3 { font-size: 1.1rem; color: #1f2937; }
+        .fechar { font-size: 1.6rem; font-weight: bold; cursor: pointer; color: #9ca3af; background: none; border: none; padding: 0; width: auto; line-height: 1; }
+        .fechar:hover { color: #4b5563; }
+        .filtro-periodo { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+        .filtro-periodo label { font-weight: 500; color: #374151; font-size: 0.9rem; }
+        .filtro-periodo input { width: auto; padding: 7px; margin: 0; }
+        .btn-baixar { display: block; margin: 0 auto; padding: 10px 22px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; width: auto; }
+        .btn-baixar:hover { background: #1d4ed8; }
 
-        #data, #edtData { max-width: 160px; flex: 0 0 auto; }
+        .cards { 
+            display: grid; 
+            gap: 18px; 
+            grid-template-columns: repeat(3, 1fr); 
+            margin-top: 20px; 
+            width: 100%; 
+            max-width: 100%;
+            align-items: stretch;
+        }
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            padding: 20px 15px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            text-align: center; 
+            transition: transform 0.2s; 
+            min-height: 140px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .card-pix { border-left: 4px solid #2563eb; }
+        .card-credito { border-left: 4px solid #7c3aed; }
+        .card-debito { border-left: 4px solid #16a34a; }
+        .card-titulo { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: #1f2937;
+            width: 100%;
+        }
 
-        .tabela { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; width: 100%; overflow: hidden; }
-        .tabela-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.875rem 0.625rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.875rem; }
-        th { background: #1565c0; color: white; font-weight: 600; }
-        .venda { color: #2e7d32; font-weight: 600; }
-        .despesa { color: #c62828; font-weight: 600; }
-        .acao-coluna { width: 110px; text-align: center; }
+        .erro-tela { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 6px; text-align: center; margin-bottom: 16px; display: none; border: 1px solid #fecaca; }
+
+        .rodape { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: center; }
+        .botoes-rodape { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .btn-rodape { background: none; border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; padding: 0; width: auto; margin: 0; transition: color 0.2s; }
+        .btn-conecte { color: #2563eb; }
+        .btn-conecte:hover { color: #1d4ed8; }
+        .btn-rodape.sair { color: #dc2626; }
+        .btn-rodape.sair:hover { color: #b91c1c; }
 
         @media (max-width: 768px) {
-            .tabela-wrapper { overflow: visible; }
-            table, thead, tbody, th, td, tr { display: block; width: 100%; }
-            thead { display: none; }
-            tr { margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; background: #fafafa; border-radius: 0.5rem; padding: 0.5rem; }
-            td { padding: 0.625rem 0.5rem; border: none; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-            td::before { content: attr(etiqueta); font-weight: 600; color: #444; text-transform: uppercase; font-size: 0.75rem; }
-            .acao-coluna { width: 100%; justify-content: center; gap: 0.5rem; padding: 0.75rem 0.5rem; }
-            .acao-coluna::before { display: none; }
+            .cards { grid-template-columns: 1fr; }
+            .grupo { flex-wrap: wrap; }
+            .dinheiro-fisico input { width: 100%; }
+            .dinheiro-fisico button { width: 100%; justify-content: center; }
+            .header { flex-direction: column; align-items: center; gap: 15px; }
+            .info-usuario { text-align: center; width: 100%; }
         }
-
-        .totais { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .card { flex: 1 1 13.75rem; padding: 1.25rem; border-radius: 0.5rem; color: white; text-align: center; }
-        .card.vendas { background: #2e7d32; }
-        .card.despesas { background: #c62828; }
-        .card.saldo { background: #1565c0; }
-        .valor { font-size: 1.5rem; font-weight: bold; margin-top: 0.3125rem; }
-
-        .pagina { display: none; }
-        .pagina.ativa { display: block; }
-        .cabecalho-pagina { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        .titulo-pagina { font-size: 1.5rem; color: #1565c0; }
-
-        .caixa-exportar, .caixa-integracao { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        .caixa-exportar h3, .caixa-integracao h3 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
-        .modal.aberto { display: flex; }
-        .conteudo-modal { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
-        .cabecalho-modal { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-        .cabecalho-modal h3 { color: #1565c0; font-size: 1.2rem; }
-        .btn-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0; width: auto; }
-        .btn-fechar:hover { color: #222; }
-
-        @media print {
-            body * { visibility: hidden; }
-            .pagina.ativa, .pagina.ativa * { visibility: visible; }
-            .pagina.ativa { position: absolute; left: 0; top: 0; width: 100%; }
-            .barra-botoes, .cabecalho-pagina button, .caixa-exportar { display: none !important; }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .painel-card { padding: 25px 20px; }
+            .logo-texto { font-size: 1.6rem; }
+            .logo-icone { width: 40px; height: 40px; }
+            .linha-dupla { flex-direction: column; gap: 6px; }
+            .linha-dupla input { width: 100%; }
+            .resumo-cabecalho { flex-direction: column; align-items: flex-start; }
+            .btn-relatorio { width: 100%; text-align: center; }
+            .resumo-grade { gap: 8px 14px; font-size: 0.9rem; }
         }
-
-        @media (min-width: 992px) { .barra-botoes { flex-wrap: nowrap; } .barra-botoes > div, .barra-botoes > .btn { flex: 1; max-width: none; } }
-        @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } .cabecalho { flex-direction: column; align-items: flex-start; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .btn.pequeno { width: 100%; } }
     </style>
 </head>
 <body>
-
-<div id="conteudo-principal">
-<script>
-    const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
-    const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
-    const TABELA_SUPABASE = 'financo_dados';
-    let supabase;
-
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-
-    function sair() {}
-</script>
-
-<div class="pagina ativa" id="paginaPrincipal">
-    <div class="cabecalho">
-        <h1>🔹 Financo</h1>
-        <button class="btn-sair" onclick="sair()">🚪 Sair</button>
-    </div>
-
-    <div class="barra-botoes">
-        <div style="position: relative;">
-            <button class="btn primario" onclick="alternarMenuGerenciar()">⚙️ Gerenciar Itens ▼</button>
-            <div class="menu-gerenciar" id="menuGerenciar">
-                <div class="grupo-lista">
-                    <h4>📈 Itens de Venda / Entrada</h4>
-                    <div id="listaVenda"></div>
-                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('venda')">+ Adicionar Item</button>
+    <div class="container">
+        <div id="tela-acesso" class="tela-acesso">
+            <div class="painel-card">
+                <div class="logo-area">
+                    <div class="logo">
+                        <svg class="logo-icone" viewBox="0 0 100 100" fill="none">
+                            <circle cx="50" cy="50" r="42" fill="#2563eb" stroke="#93c5fd" stroke-width="4"/>
+                            <path d="M30 50L45 65L70 35" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h1 class="logo-texto">Pag<span>Check</span></h1>
+                    </div>
+                    <p class="slogan">Confirmação segura de pagamentos</p>
                 </div>
-                <div class="grupo-lista">
-                    <h4>📉 Itens de Despesa / Saída</h4>
-                    <div id="listaDespesa"></div>
-                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('despesa')">+ Adicionar Item</button>
+                <div id="tela-inicial" class="tela-inicial">
+                    <button class="btn-inicial" onclick="mostrarFormulario('login')">Entrar</button>
+                    <button class="btn-inicial btn-secundario" onclick="mostrarFormulario('cadastro')">Criar Conta</button>
                 </div>
-                <button class="btn-acao salvar" style="width:100%; margin-top:0.75rem;" onclick="salvarItensMenu()">✅ Salvar Alterações</button>
-            </div>
-        </div>
-        <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
-        <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
-        <!-- ALTERADO: Agora leva direto para infocash.html -->
-        <button class="btn secundario" onclick="window.location.href='infocash.html'">🔗 Integração</button>
-        <button class="btn secundario" onclick="irParaPaginaGrafico()">📊 Gráfico</button>
-        <button class="btn aviso pequeno" onclick="carregarDoSupabase()">☁️ Carregar da Nuvem</button>
-    </div>
-
-    <div class="form" id="formulario">
-        <div class="linha">
-            <div class="campo">
-                <label>Data</label>
-                <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
-            </div>
-            <div class="campo">
-                <label>Tipo</label>
-                <div class="tipo">
-                    <label><input type="checkbox" id="venda"> Venda / Entrada</label>
-                    <label><input type="checkbox" id="despesa"> Despesa / Saída</label>
+                <div id="area-formularios" class="area-formularios">
+                    <div class="voltar">
+                        <button class="btn-voltar" onclick="voltarInicio()">← Voltar</button>
+                    </div>
+                    <div id="login" class="form-panel">
+                        <form id="form-login">
+                            <input type="email" id="login-email" placeholder="Seu e-mail" required>
+                            <input type="password" id="login-senha" placeholder="Sua senha" required>
+                            <div id="avisoLogin" class="aviso"></div>
+                            <button type="submit" class="btn-inicial">Entrar</button>
+                        </form>
+                        <div class="links">
+                            <a href="#" onclick="recuperarSenha()">Esqueceu a senha?</a>
+                        </div>
+                    </div>
+                    <div id="cadastro" class="form-panel">
+                        <form id="form-cadastro">
+                            <input type="text" id="cad-nome" placeholder="Nome Completo / Razão Social" required>
+                            <input type="text" id="cad-documento" placeholder="CPF (11) ou CNPJ (14)" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" required>
+                            <input type="text" id="cad-cep" placeholder="Digite o CEP" maxlength="8" oninput="this.value=this.value.replace(/\D/g,'')" required>
+                            <input type="text" id="cad-rua" placeholder="Rua" readonly required>
+                            <div class="linha-dupla">
+                                <input type="text" id="cad-numero" placeholder="Número" required>
+                                <input type="text" id="cad-bairro" placeholder="Bairro" readonly required>
+                            </div>
+                            <div class="linha-dupla">
+                                <input type="text" id="cad-cidade" placeholder="Cidade" readonly required>
+                                <input type="text" id="cad-estado" placeholder="UF" maxlength="2" readonly required>
+                            </div>
+                            <input type="hidden" id="cad-endereco">
+                            <input type="email" id="cad-email" placeholder="Seu e-mail" required>
+                            <input type="password" id="cad-senha" placeholder="Criar senha (mínimo 6 caracteres)" required minlength="6">
+                            <input type="password" id="cad-conf-senha" placeholder="Confirmar senha" required minlength="6">
+                            <div id="avisoCad" class="aviso"></div>
+                            <button type="submit" class="btn-inicial">Cadastrar</button>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div class="campo">
-                <label>Item</label>
-                <select id="item"><option value="">Selecione primeiro o tipo</option></select>
+        </div>
+
+        <div id="tela-painel" class="tela-painel">
+            <div class="header">
+                <div class="lado-esquerdo">
+                    <div class="logo-cabecalho">
+                        <svg class="logo-icone" viewBox="0 0 100 100" fill="none">
+                            <circle cx="50" cy="50" r="42" fill="#2563eb" stroke="#93c5fd" stroke-width="4"/>
+                            <path d="M30 50L45 65L70 35" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h1 class="logo-texto">Pag<span>Check</span></h1>
+                    </div>
+                    <p class="slogan-cabecalho">Confirmação direto do banco — sem golpes</p>
+                </div>
+
+                <div class="info-usuario">
+                    <span class="info-nome" id="mostra-nome"></span>
+                    <span class="info-email" id="mostra-email"></span>
+                </div>
+            </div>
+
+            <div id="erro-geral" class="erro-tela"></div>
+            <div class="aviso-seguranca">⚠️ Libere o produto SOMENTE após confirmar o recebimento do valor na sua conta!</div>
+
+            <div class="dinheiro-fisico">
+                <div class="grupo">
+                    <input type="number" id="valor-dinheiro" placeholder="Valor em espécie R$" step="0.01" min="0">
+                    <button onclick="registrarDinheiroFisico()">Adicionar</button>
+                </div>
+                <div id="aviso-dinheiro" class="aviso-dinheiro"></div>
+            </div>
+
+            <div class="resumo">
+                <div class="resumo-cabecalho">
+                    <h4>📊 Resumo do Dia</h4>
+                    <button class="btn-relatorio" onclick="abrirModalRelatorio()">📄 Ver Relatório</button>
+                </div>
+                <div class="resumo-grade">
+                    <div class="resumo-linha"><span>Pix Confirmado:</span><span class="resumo-valor-conf" id="res-pix-conf">R$ 0,00</span></div>
+                    <div class="resumo-linha"><span>Pix Agendado:</span><span class="resumo-valor-agen" id="res-pix-agen">R$ 0,00</span></div>
+                    <div class="resumo-linha"><span>Crédito:</span><span id="res-credito">R$ 0,00</span></div>
+                    <div class="resumo-linha"><span>Débito:</span><span id="res-debito">R$ 0,00</span></div>
+                    <div class="resumo-linha"><span>Dinheiro Físico:</span><span id="res-dinheiro">R$ 0,00</span></div>
+                    <div class="resumo-linha resumo-total"><span>Total Geral:</span><span id="total-geral-conf">R$ 0,00</span></div>
+                </div>
+            </div>
+
+            <div id="modalRelatorio" class="modal" onclick="fecharModalFora(event)">
+                <div class="modal-conteudo" onclick="event.stopPropagation()">
+                    <div class="modal-cabecalho">
+                        <h3>📋 Relatório de Transações</h3>
+                        <button class="fechar" onclick="fecharModalRelatorio()">×</button>
+                    </div>
+                    <div class="filtro-periodo">
+                        <div>
+                            <label>De:</label>
+                            <input type="date" id="data-inicio">
+                        </div>
+                        <div>
+                            <label>Até:</label>
+                            <input type="date" id="data-fim">
+                        </div>
+                    </div>
+                    <button class="btn-baixar" onclick="gerarRelatorioPDF()">⬇️ Baixar em PDF</button>
+                </div>
+            </div>
+
+            <div class="cards">
+                <div class="card card-pix">
+                    <div class="card-titulo">⚡ Pix</div>
+                    <div>Aguardando dados...</div>
+                </div>
+                <div class="card card-credito">
+                    <div class="card-titulo">💳 Crédito</div>
+                    <div>Aguardando dados...</div>
+                </div>
+                <div class="card card-debito">
+                    <div class="card-titulo">🏧 Débito</div>
+                    <div>Aguardando dados...</div>
+                </div>                       
+            </div>
+
+            <div class="rodape">
+                <div class="botoes-rodape">
+                    <button class="btn-rodape btn-conecte" onclick="window.location.href='configuracoes.html'">Conecte</button>
+                    <button class="btn-rodape sair" onclick="sairConta()">Sair</button>
+                </div>
             </div>
         </div>
-        <div class="linha">
-            <div class="campo">
-                <label>Valor R$</label>
-                <input type="number" step="0.01" id="valor" placeholder="0,00">
-            </div>
-            <div class="campo">
-                <label>Pagamento</label>
-                <select id="pagamento">
-                    <option value="">Selecione</option>
-                    <option>Dinheiro</option>
-                    <option>Pix</option>
-                    <option>Cartão Crédito</option>
-                    <option>Cartão Débito</option>
-                </select>
-            </div>
-            <div class="campo" style="flex: 2 1 18.75rem;">
-                <label>Observação</label>
-                <input type="text" id="obs" placeholder="Opcional">
-            </div>
-        </div>
     </div>
 
-    <div class="tabela">
-        <div class="tabela-wrapper">
-            <table>
-                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th></tr></thead>
-                <tbody id="corpoTabela"></tbody>
-            </table>
-        </div>
-    </div>
+    <script>
+        const SUPABASE_URL = "https://rxbojrrqjclosqozixcg.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Ym9qcnJxamNsb3Nxb3ppeGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MjgwNzEsImV4cCI6MjEwMDMwNDA3MX0.AAsQdAkmMK43jOZiwbRnXva9vIHjxc_A11pJCYg6MG0";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { jsPDF } = window.jspdf;
 
-    <div class="totais">
-        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="totalVendas">R$ 0,00</div></div>
-        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="totalDespesas">R$ 0,00</div></div>
-        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="saldo">R$ 0,00</div></div>
-    </div>
+        let usuarioLogado = null;
+        let CLIENTE_ID = null;
+        let totalPix = 0, totalCredito = 0, totalDebito = 0, totalDinheiroFisico = 0;
+        let inscricaoTempoReal = null; // CONTROLA A CONEXÃO EM TEMPO REAL
 
-    <div class="area-continuar" id="areaContinuar">
-        <button class="btn sucesso" onclick="irParaPaginaExportar()">✅ Continuar para Salvar/Exportar</button>
-    </div>
-</div>
+        function abrirModalRelatorio() { document.getElementById('modalRelatorio').classList.add('aberto'); }
+        function fecharModalRelatorio() { document.getElementById('modalRelatorio').classList.remove('aberto'); }
+        function fecharModalFora(event) { if (event.target.id === 'modalRelatorio') fecharModalRelatorio(); }
 
-<div class="pagina" id="paginaExportar">
-    <div class="cabecalho-pagina">
-        <button class="btn voltar" style="width: auto;" onclick="window.location.href='inicio.html'; return false;">⬅️ Voltar</button>
-        <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
-    </div>
-    <div class="tabela">
-        <div class="tabela-wrapper">
-            <table>
-                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th class="acao-coluna">Ações</th></tr></thead>
-                <tbody id="tabelaExportar"></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="totais">
-        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="expTotalVendas">R$ 0,00</div></div>
-        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="expTotalDespesas">R$ 0,00</div></div>
-        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="expSaldo">R$ 0,00</div></div>
-    </div>
-    <div class="caixa-exportar">
-        <h3>Opções de Salvamento e Impressão</h3>
-        <div class="grupo-botoes-exportar">
-            <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
-            <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
-            <button class="btn sucesso" onclick="salvarNoSupabase()">☁️ Salvar tudo na Nuvem</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="modalEditar">
-    <div class="conteudo-modal">
-        <h3>✏️ Editar Lançamento</h3>
-        <div class="linha">
-            <div class="campo"><label>Data</label><input type="text" id="edtData" placeholder="dd/mm/aaaa" maxlength="10"></div>
-            <div class="campo"><label>Tipo</label><div class="tipo"><label><input type="checkbox" id="edtVenda"> Venda</label><label><input type="checkbox" id="edtDespesa"> Despesa</label></div></div>
-            <div class="campo"><label>Item</label><select id="edtItem"></select></div>
-        </div>
-        <div class="linha">
-            <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="edtValor"></div>
-            <div class="campo"><label>Pagamento</label><select id="edtPagamento"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito</option><option>Cartão Débito</option></select></div>
-            <div class="campo" style="flex: 2 1 18.75rem;"><label>Observação</label><input type="text" id="edtObs"></div>
-        </div>
-        <div class="linha" style="margin-top: 1rem;">
-            <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
-            <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let lancamentos = [];
-    let ultimo = '';
-    let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
-    let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
-    let indiceEdicaoAtual = null;
-    let pastaUltimosSalvos = [];
-
-    function dataHoje() {
-        const d = new Date();
-        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    }
-
-    function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
-
-    function atualizarSelectPorTipo() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const select = document.getElementById('item');
-        select.innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-        if (ehVenda) itensVenda.forEach(n => select.appendChild(new Option(n, n)));
-        else if (ehDespesa) itensDespesa.forEach(n => select.appendChild(new Option(n, n)));
-        verificarPreenchimentoAutomatico();
-    }
-
-    function verificarPreenchimentoAutomatico() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const data = document.getElementById('data').value.trim();
-        const item = document.getElementById('item').value.trim();
-        const valor = parseFloat(document.getElementById('valor').value || 0);
-        const pag = document.getElementById('pagamento').value.trim();
-
-        if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) salvar();
-    }
-
-    function salvar() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const data = document.getElementById('data').value.trim();
-        const item = document.getElementById('item').value.trim();
-        const valor = parseFloat(document.getElementById('valor').value || 0);
-        const pag = document.getElementById('pagamento').value.trim();
-        const obs = document.getElementById('obs').value.trim() || '-';
-
-        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return;
-
-        const chave = `${data}${ehVenda}${item}${valor}${pag}`;
-        if(chave === ultimo) return;
-        ultimo = chave;
-
-        lancamentos.push({data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs});
-        atualizarTabela();
-        atualizarSoma();
-        limparCampos();
-        verificarBotaoContinuar();
-    }
-
-    function atualizarTabela() {
-        const tab = document.getElementById('corpoTabela');
-        tab.innerHTML = '';
-        [...lancamentos].reverse().forEach(l => {
-            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda / Entrada' : 'Despesa / Saída'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td></tr>`;
-        });
-    }
-
-    function atualizarSoma() {
-        let v = 0, d = 0;
-        lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
-        const saldo = v - d;
-        document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
-        document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
-        document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
-    }
-
-    function limparCampos() {
-        document.getElementById('venda').checked = false;
-        document.getElementById('despesa').checked = false;
-        document.getElementById('item').innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-        document.getElementById('valor').value = '';
-        document.getElementById('pagamento').value = '';
-        document.getElementById('obs').value = '';
-        document.getElementById('data').value = dataHoje();
-    }
-
-    function alternarMenuGerenciar() { document.getElementById('menuGerenciar').classList.toggle('aberto'); atualizarListasMenu(); }
-    function atualizarListasMenu() {
-        const lv = document.getElementById('listaVenda'), ld = document.getElementById('listaDespesa');
-        lv.innerHTML = ''; itensVenda.forEach((n,i)=>lv.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="v-${i}"><button class="btn-acao excluir" onclick="remover('venda',${i})">X</button></div>`);
-        ld.innerHTML = ''; itensDespesa.forEach((n,i)=>ld.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="d-${i}"><button class="btn-acao excluir" onclick="remover('despesa',${i})">X</button></div>`);
-    }
-    function remover(t,i){t==='venda'?itensVenda.splice(i,1):itensDespesa.splice(i,1);atualizarListasMenu();}
-    function adicionarNovoItem(t){t==='venda'?itensVenda.push(''):itensDespesa.push('');atualizarListasMenu();}
-    function salvarItensMenu() {
-        itensVenda = itensVenda.map((_,i)=>document.getElementById(`v-${i}`).value.trim()).filter(n=>n);
-        itensDespesa = itensDespesa.map((_,i)=>document.getElementById(`d-${i}`).value.trim()).filter(n=>n);
-        atualizarSelectPorTipo();
-        document.getElementById('menuGerenciar').classList.remove('aberto');
-        alert('Itens salvos com sucesso!');
-    }
-    
-    function abrirPastaUltimosSalvos(){window.location.href = 'salvos.html';}
-
-    function salvarNaPastaInterna() {
-        if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
-        let totalV = 0, totalD = 0;
-        lancamentos.forEach(l => l.tipo==='venda' ? totalV += l.valor : totalD += l.valor);
-        pastaUltimosSalvos.unshift({
-            dataHora: new Date().toLocaleString('pt-BR'),
-            lancamentos: JSON.parse(JSON.stringify(lancamentos)),
-            totalGeral: totalV - totalD
-        });
-        if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
-        localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
-        alert('✅ Salvo localmente!');
-    }
-
-    function verificarBotaoContinuar() {
-        const area = document.getElementById('areaContinuar');
-        lancamentos.length >= 1 ? area.classList.add('mostrar') : area.classList.remove('mostrar');
-    }
-
-    function irParaPaginaExportar() {
-        document.getElementById('paginaPrincipal').classList.remove('ativa');
-        document.getElementById('paginaExportar').classList.add('ativa');
-        atualizarPaginaExportar();
-        window.scrollTo(0,0);
-    }
-
-    function irParaPaginaGrafico() {window.location.href = 'grafico.html';}
-
-    function atualizarPaginaExportar() {
-        const tab = document.getElementById('tabelaExportar');
-        tab.innerHTML = '';
-        lancamentos.forEach((l, i) => {
-            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
-        });
-        let v=0, d=0;
-        lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
-        document.getElementById('expTotalVendas').textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
-        document.getElementById('expTotalDespesas').textContent = `R$ ${d.toFixed(2).replace('.',',')}`;
-        document.getElementById('expSaldo').textContent = `R$ ${(v-d).toFixed(2).replace('.',',')}`;
-    }
-
-    function abrirEdicao(indice) {
-        indiceEdicaoAtual = indice;
-        const l = lancamentos[indice];
-        document.getElementById('edtVenda').checked = l.tipo === 'venda';
-        document.getElementById('edtDespesa').checked = l.tipo === 'despesa';
-        document.getElementById('edtData').value = l.data;
-        const selItem = document.getElementById('edtItem');
-        selItem.innerHTML = '<option value="">Selecione</option>';
-        l.tipo === 'venda' ? itensVenda.forEach(n=>selItem.appendChild(new Option(n,n))) : itensDespesa.forEach(n=>selItem.appendChild(new Option(n,n)));
-        selItem.value = l.item;
-        document.getElementById('edtValor').value = l.valor;
-        document.getElementById('edtPagamento').value = l.pag;
-        document.getElementById('edtObs').value = l.obs === '-' ? '' : l.obs;
-        document.getElementById('modalEditar').classList.add('aberto');
-    }
-
-    function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
-
-    function salvarEdicao() {
-        const ehVenda = document.getElementById('edtVenda').checked;
-        const ehDespesa = document.getElementById('edtDespesa').checked;
-        const data = document.getElementById('edtData').value.trim();
-        const item = document.getElementById('edtItem').value.trim();
-        const valor = parseFloat(document.getElementById('edtValor').value || 0);
-        const pag = document.getElementById('edtPagamento').value.trim();
-        const obs = document.getElementById('edtObs').value.trim() || '-';
-        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha tudo corretamente!'); return; }
-        lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
-        fecharModal(); atualizarTabela(); atualizarSoma(); atualizarPaginaExportar();
-        alert('✅ Atualizado!');
-    }
-
-    function excluirLancamento(indice) {
-        if(confirm('Excluir esse lançamento?')) {
-            lancamentos.splice(indice, 1);
-            atualizarTabela(); atualizarSoma(); atualizarPaginaExportar(); verificarBotaoContinuar();
+        function mostrarFormulario(tipo) {
+            document.getElementById('tela-inicial').style.display = 'none';
+            document.getElementById('area-formularios').style.display = 'flex';
+            document.querySelector('.voltar').style.display = 'block';
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(tipo).classList.add('active');
+            limparAvisos();
         }
-    }
 
-    async function salvarNoSupabase() {
-        if (!supabase) return alert('❌ Nuvem indisponível');
-        if (lancamentos.length === 0) return alert('Nenhum dado para salvar!');
-
-        try {
-            await supabase.from(TABELA_SUPABASE).delete().neq('id', 0);
-            const dados = lancamentos.map(l => ({
-                data: l.data, tipo: l.tipo, item: l.item, valor: l.valor,
-                pagamento: l.pag, observacao: l.obs,
-                itens_venda: itensVenda, itens_despesa: itensDespesa
-            }));
-
-            const { error } = await supabase.from(TABELA_SUPABASE).insert(dados);
-            if (error) throw error;
-            alert('✅ Salvo na nuvem com sucesso!');
-        } catch (erro) {
-            alert(`❌ Erro: ${erro.message}`);
+        function voltarInicio() {
+            document.getElementById('area-formularios').style.display = 'none';
+            document.querySelector('.voltar').style.display = 'none';
+            document.getElementById('tela-inicial').style.display = 'flex';
+            limparAvisos();
         }
-    }
 
-    async function carregarDoSupabase() {
-        if (!supabase) return alert('❌ Nuvem indisponível');
-        if (!confirm('Isso substituirá os dados atuais. Continuar?')) return;
-
-        try {
-            const { data, error } = await supabase.from(TABELA_SUPABASE).select('*');
-            if (error) throw error;
-            if (!data || data.length === 0) return alert('Nada salvo na nuvem ainda.');
-
-            lancamentos = data.map(d => ({
-                data: d.data, tipo: d.tipo, item: d.item, valor: d.valor,
-                pag: d.pagamento, obs: d.observacao
-            }));
-
-            if (data[0].itens_venda) itensVenda = data[0].itens_venda;
-            if (data[0].itens_despesa) itensDespesa = data[0].itens_despesa;
-
-            atualizarTabela(); atualizarSoma(); atualizarSelectPorTipo();
-            atualizarPaginaExportar(); verificarBotaoContinuar();
-            alert(`✅ ${lancamentos.length} lançamentos carregados!`);
-        } catch (erro) {
-            alert(`❌ Erro: ${erro.message}`);
+        function mostrarAviso(id, texto, tipo) {
+            const el = document.getElementById(id);
+            el.textContent = texto;
+            el.className = `aviso ${tipo}`;
+            el.style.display = 'block';
         }
-    }
 
-    window.onload = function() {
-        const salvos = localStorage.getItem('financoPastaSalvos');
-        if(salvos) pastaUltimosSalvos = JSON.parse(salvos);
-        document.getElementById('data').value = dataHoje();
+        function limparAvisos() { document.querySelectorAll('.aviso, .erro-tela, .aviso-dinheiro').forEach(el => el.style.display = 'none'); }
 
-        document.getElementById('venda').addEventListener('change', function() {
-            if(this.checked) document.getElementById('despesa').checked = false;
-            atualizarSelectPorTipo();
+        function mostrarErro(texto) {
+            const aviso = document.getElementById('erro-geral');
+            aviso.textContent = "❌ " + texto;
+            aviso.style.display = 'block';
+            setTimeout(() => aviso.style.display = 'none', 5000);
+        }
+
+        function formatarMoeda(n) { return `R$ ${n.toFixed(2).replace('.', ',')}`; }
+
+        function atualizarPainel() {
+            document.getElementById('res-pix-conf').textContent = formatarMoeda(totalPix);
+            document.getElementById('res-pix-agen').textContent = formatarMoeda(0);
+            document.getElementById('res-credito').textContent = formatarMoeda(totalCredito);
+            document.getElementById('res-debito').textContent = formatarMoeda(totalDebito);
+            document.getElementById('res-dinheiro').textContent = formatarMoeda(totalDinheiroFisico);
+            document.getElementById('total-geral-conf').textContent = formatarMoeda(totalPix + totalCredito + totalDebito + totalDinheiroFisico);
+        }
+
+        // 🔄 FUNÇÃO QUE ESCUTA ALTERAÇÕES EM TEMPO REAL
+        function iniciarTempoReal() {
+            if (!CLIENTE_ID) return;
+            // SE JÁ TIVER UMA CONEXÃO, FECHA ANTES DE CRIAR NOVA
+            if (inscricaoTempoReal) inscricaoTempoReal.unsubscribe();
+
+            inscricaoTempoReal = _supabase
+                .channel('transacoes_mudancas')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // ESCUTA INSERIR, ALTERAR E EXCLUIR
+                        schema: 'public',
+                        table: 'transacoes_gerais',
+                        filter: `cliente_id=eq.${CLIENTE_ID}` // SÓ OS DADOS DESSE USUÁRIO
+                    },
+                    () => {
+                        // QUALQUER MUDANÇA → RECARREGA E ATUALIZA TUDO NA TELA
+                        carregarDadosTransacoes();
+                    }
+                )
+                .subscribe();
+        }
+
+        document.getElementById('cad-cep').addEventListener('blur', async () => {
+            const cep = document.getElementById('cad-cep').value.replace(/\D/g,'');
+            if (cep.length !== 8) return;
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const dados = await res.json();
+                if (dados.erro) throw new Error('CEP não encontrado');
+                document.getElementById('cad-rua').value = dados.logradouro || '';
+                document.getElementById('cad-bairro').value = dados.bairro || '';
+                document.getElementById('cad-cidade').value = dados.localidade || '';
+                document.getElementById('cad-estado').value = dados.uf || '';
+                document.getElementById('cad-numero').focus();
+            } catch {
+                mostrarAviso('avisoCad', '❌ CEP inválido ou não encontrado', 'erro');
+                ['cad-rua','cad-bairro','cad-cidade','cad-estado'].forEach(id=>document.getElementById(id).value='');
+            }
         });
-        document.getElementById('despesa').addEventListener('change', function() {
-            if(this.checked) document.getElementById('venda').checked = false;
-            atualizarSelectPorTipo();
+
+        document.getElementById('form-cadastro').addEventListener('submit', async e => {
+            e.preventDefault(); limparAvisos();
+            const nome = document.getElementById('cad-nome').value.trim();
+            const doc = document.getElementById('cad-documento').value.trim().replace(/\D/g,'');
+            const rua = document.getElementById('cad-rua').value.trim();
+            const num = document.getElementById('cad-numero').value.trim();
+            const bairro = document.getElementById('cad-bairro').value.trim();
+            const cidade = document.getElementById('cad-cidade').value.trim();
+            const uf = document.getElementById('cad-estado').value.trim();
+            const email = document.getElementById('cad-email').value.trim();
+            const senha = document.getElementById('cad-senha').value;
+            const conf = document.getElementById('cad-conf-senha').value;
+
+            if (![11,14].includes(doc.length)) return mostrarAviso('avisoCad','❌ CPF com 11 dígitos ou CNPJ com 14','erro');
+            if (senha !== conf) return mostrarAviso('avisoCad','❌ Senhas não coincidem','erro');
+
+            document.getElementById('cad-endereco').value = `${rua}, ${num} - ${bairro} - ${cidade}/${uf}`;
+            mostrarAviso('avisoCad','⏳ Criando conta...','sucesso');
+            try {
+                const { data:auth, error:e1 } = await _supabase.auth.signUp({ email, password:senha });
+                if (e1) throw e1;
+                if (!auth.user) throw new Error('Não foi possível criar o usuário');
+
+                const { error:e2 } = await _supabase.from('estabelecimentos').insert({
+                    id: auth.user.id, usuario_id: auth.user.id, nome, cpf_cnpj:doc, endereco:document.getElementById('cad-endereco').value, email
+                });
+                if (e2) throw e2;
+
+                mostrarAviso('avisoCad','✅ Conta criada! Fazendo login...','sucesso');
+                setTimeout(()=>mostrarFormulario('login'),1500);
+            } catch (e) {
+                console.error(e);
+                mostrarAviso('avisoCad','❌ '+(e.message||'Erro ao cadastrar'),'erro');
+            }
         });
-        document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
-        document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
-        document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
-    };
-</script>
-</div>
+
+        document.getElementById('form-login').addEventListener('submit', async e => {
+            e.preventDefault(); limparAvisos();
+            const email = document.getElementById('login-email').value.trim();
+            const senha = document.getElementById('login-senha').value;
+            if (!email || !senha) return mostrarAviso('avisoLogin','❌ Preencha todos os campos','erro');
+            mostrarAviso('avisoLogin','⏳ Entrando...','sucesso');
+            try {
+                const { data, error } = await _supabase.auth.signInWithPassword({ email, password:senha });
+                if (error) throw error;
+                usuarioLogado = data.user;
+                await carregarDadosUsuario();
+            } catch (e) {
+                mostrarAviso('avisoLogin','❌ '+(e.message||'Erro ao entrar'),'erro');
+            }
+        });
+
+        async function recuperarSenha(){
+            const email = prompt('Digite seu e-mail cadastrado:');
+            if (!email) return;
+            try {
+                await _supabase.auth.resetPasswordForEmail(email, { redirectTo: location.href });
+                alert('✅ Link enviado ao seu e-mail!');
+            } catch (e) { alert('❌ '+e.message); }
+        }
+
+        async function registrarDinheiroFisico() {
+            const input = document.getElementById('valor-dinheiro');
+            const valor = parseFloat(input.value);
+            const aviso = document.getElementById('aviso-dinheiro');
+            if (!valor || valor <= 0) {
+                aviso.className = 'aviso-dinheiro erro';
+                aviso.textContent = '❌ Digite um valor válido';
+                aviso.style.display = 'block';
+                return;
+            }
+            try {
+                await _supabase.from('transacoes_gerais').insert({
+                    cliente_id: CLIENTE_ID, tipo:'DINHEIRO', valor, status:'RECEBIDO', data_transacao: new Date().toISOString()
+                });
+                aviso.className = 'aviso-dinheiro';
+                aviso.textContent = `✅ ${formatarMoeda(valor)} adicionado!`;
+                aviso.style.display = 'block';
+                input.value = '';
+                // NÃO PRECISA MAIS CHAMAR MANUALMENTE → O TEMPO REAL FAZ SOZINHO
+                setTimeout(()=>aviso.style.display='none',3000);
+            } catch (e) {
+                aviso.className = 'aviso-dinheiro erro';
+                aviso.textContent = '❌ Erro: '+e.message;
+                aviso.style.display = 'block';
+            }
+        }
+
+        async function sairConta() {
+            // FECHA A CONEXÃO DE TEMPO REAL AO SAIR
+            if (inscricaoTempoReal) inscricaoTempoReal.unsubscribe();
+            await _supabase.auth.signOut();
+            location.reload();
+        }
+
+        async function carregarDadosUsuario(){
+            try {
+                const { data:{user} } = await _supabase.auth.getUser();
+                if (!user) return;
+                CLIENTE_ID = user.id;
+                const {data:perfil} = await _supabase.from('estabelecimentos').select('nome').eq('usuario_id',user.id).maybeSingle();
+                document.getElementById('mostra-nome').textContent = perfil?.nome || '';
+                document.getElementById('mostra-email').textContent = user.email || '';
+                document.getElementById('tela-acesso').style.display = 'none';
+                document.getElementById('tela-painel').style.display = 'block';
+                await carregarDadosTransacoes();
+                // ✅ INICIA O TEMPO REAL DEPOIS QUE CARREGA OS DADOS
+                iniciarTempoReal();
+            } catch (e) { mostrarErro(e.message); }
+        }
+
+        async function carregarDadosTransacoes() {
+            if (!CLIENTE_ID) return;
+            try {
+                const {data} = await _supabase.from('transacoes_gerais').select('tipo,valor,status').eq('cliente_id',CLIENTE_ID);
+                totalPix = totalCredito = totalDebito = totalDinheiroFisico = 0;
+                (data||[]).forEach(t=>{
+                    const v = parseFloat(t.valor)||0;
+                    if (t.tipo==='PIX' && t.status==='RECEBIDO') totalPix +=v;
+                    else if (t.tipo==='CREDITO') totalCredito +=v;
+                    else if (t.tipo==='DEBITO') totalDebito +=v;
+                    else if (t.tipo==='DINHEIRO') totalDinheiroFisico +=v;
+                });
+                atualizarPainel();
+            } catch (e) { console.error(e); }
+        }
+
+        async function gerarRelatorioPDF() {
+            const ini = document.getElementById('data-inicio').value;
+            const fim = document.getElementById('data-fim').value;
+            if (!ini || !fim) return alert('Informe o período!');
+            try {
+                const {data} = await _supabase.from('transacoes_gerais').select('tipo,valor,status,data_transacao').eq('cliente_id',CLIENTE_ID).gte('data_transacao',ini).lte('data_transacao',fim+'T23:59:59').order('data_transacao',{asc:false});
+                
+                const doc = new jsPDF();
+                doc.setFontSize(18);
+                doc.setTextColor(37, 99, 235);
+                doc.text('PagCheck - Relatório de Transações', 105, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.setTextColor(51, 51, 51);
+                doc.text(`Período: ${ini.replace(/-/g, '/')} até ${fim.replace(/-/g, '/')}`, 105, 30, { align: 'center' });
+                doc.text(`Emitido por: ${document.getElementById('mostra-nome').textContent}`, 105, 38, { align: 'center' });
+
+                const linhas = (data||[]).map(t => [
+                    new Date(t.data_transacao).toLocaleString('pt-BR'),
+                    t.tipo,
+                    formatarMoeda(t.valor),
+                    t.status
+                ]);
+
+                doc.autoTable({
+                    head: [['Data', 'Tipo', 'Valor', 'Status']],
+                    body: linhas,
+                    startY: 48,
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+                    styles: { fontSize: 10 }
+                });
+
+                const totalGeral = (data||[]).reduce((s,t) => s + parseFloat(t.valor||0), 0);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total Geral: ${formatarMoeda(totalGeral)}`, 14, doc.lastAutoTable.finalY + 15);
+
+                doc.save(`relatorio-${ini}-ate-${fim}.pdf`);
+                fecharModalRelatorio();
+            } catch (e) { alert('Erro ao gerar PDF: '+e.message); }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const {data:{user}} = await _supabase.auth.getUser();
+            if (user) { usuarioLogado=user; await carregarDadosUsuario(); }
+        });
+    </script>
 </body>
 </html>
