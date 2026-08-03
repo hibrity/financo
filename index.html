@@ -520,3 +520,300 @@
 </div>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas — Pagas/Excluídas somem da lista</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f5f5f5; padding: 1rem; max-width: 900px; margin: 0 auto; }
+
+        .secao-contas { padding: 1.25rem; background: #fff; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.08); }
+        .titulo-secao { font-size: 1.25rem; color: #1565c0; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+        .btn { padding: 0.6rem 1rem; border: none; border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .btn.primario { background: #1565c0; color: white; }
+        .btn.sucesso { background: #2e7d32; color: white; }
+        .btn.secundario { background: #e0e0e0; color: #333; }
+        .btn.perigo { background: #c62828; color: white; }
+        .btn.pequeno { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+
+        /* === 3 CARDS === */
+        .resumo-contas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+        @media(max-width:600px){ .resumo-contas{ grid-template-columns:1fr; } }
+        .card-resumo { padding: 1rem; border-radius: 0.5rem; text-align: center; color: white; }
+        .card-resumo.vencer { background: #1976d2; }
+        .card-resumo.atrasado { background: #c62828; }
+        .card-resumo.pago { background: #2e7d32; }
+        .card-resumo .val { font-size: 1.25rem; font-weight: bold; margin-top: 0.3rem; }
+
+        /* FORMULÁRIO */
+        .form { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; margin-bottom: 1.25rem; }
+        .form.aberto { max-height: 2000px; opacity: 1; }
+        .form-interno { padding: 1.25rem; background: #f9f9f9; border-radius: 0.5rem; }
+        .linha { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.9rem; align-items: flex-end; }
+        .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; }
+        label { font-size: 0.875rem; color: #333; font-weight: 500; }
+        input, select { padding: 0.6rem; border: 1px solid #ccc; border-radius: 0.35rem; font-size: 0.95rem; }
+
+        /* LISTA DE CONTAS — MOSTRA APENAS NÃO PAGAS */
+        .item-conta { padding: 0.9rem; border-radius: 0.5rem; margin-bottom: 0.6rem; border-left: 5px solid; background: #fafafa; transition: opacity 0.3s ease; }
+        .item-conta.vencer { border-left-color: #1976d2; background: #f0f7ff; }
+        .item-conta.atrasado { border-left-color: #c62828; background: #ffebee; }
+        .recorrencia-tag { display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.4rem; background: #e3f2fd; color: #1565c0; border-radius: 0.25rem; margin-left: 0.5rem; }
+        .acoes-conta { margin-top: 0.7rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+        /* === POP-UPS === */
+        .fundo-popup {
+            display: none; position: fixed; top:0; left:0;
+            width:100%; height:100%; background:rgba(0,0,0,0.6);
+            align-items:center; justify-content:center; z-index:9999; padding:1rem;
+        }
+        .fundo-popup.aberto { display:flex; }
+        .caixa-popup {
+            background:white; padding:2rem; border-radius:0.8rem;
+            max-width:420px; width:100%; box-shadow:0 0.5rem 2rem rgba(0,0,0,0.25);
+            border-top:0.5rem solid; animation: aparecer 0.3s ease-out;
+        }
+        .caixa-popup.aviso { border-color:#f57c00; }
+        .caixa-popup.atraso { border-color:#c62828; }
+        @keyframes aparecer { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+        .caixa-popup h3 { font-size:1.3rem; margin-bottom:1rem; text-align:center; }
+        .caixa-popup.aviso h3 { color:#e65100; }
+        .caixa-popup.atraso h3 { color:#c62828; }
+        .caixa-popup p { font-size:1rem; line-height:1.6; margin-bottom:1.5rem; color:#333; text-align:center; }
+        .caixa-popup .btn-ok { width:100%; padding:0.8rem; font-size:1rem; font-weight:bold; border:none; border-radius:0.5rem; cursor:pointer; }
+        .caixa-popup.aviso .btn-ok { background:#f57c00; color:white; }
+        .caixa-popup.atraso .btn-ok { background:#c62828; color:white; }
+    </style>
+</head>
+<body>
+
+<div class="secao-contas">
+    <div class="titulo-secao">
+        <span>🧾 Contas e Boletos</span>
+        <button class="btn primario pequeno" onclick="alternarFormContas()">+ Nova Conta</button>
+    </div>
+
+    <!-- === 3 CARDS === -->
+    <div class="resumo-contas">
+        <div class="card-resumo vencer">
+            <div>📄 A VENCER</div>
+            <div class="val" id="resumoVencer">R$ 0,00</div>
+        </div>
+        <div class="card-resumo atrasado">
+            <div>🔴 ATRASADAS</div>
+            <div class="val" id="resumoAtrasado">R$ 0,00</div>
+        </div>
+        <div class="card-resumo pago">
+            <div>✅ PAGAS</div>
+            <div class="val" id="resumoPago">R$ 0,00</div>
+        </div>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <div class="form" id="formContas">
+        <div class="form-interno">
+            <div class="linha">
+                <div class="campo" style="flex:2;"><label>Descrição</label><input type="text" id="contaNome" placeholder="Ex: Aluguel, Energia"></div>
+                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="contaValor"></div>
+            </div>
+            <div class="linha">
+                <div class="campo"><label>Vencimento</label><input type="date" id="contaVencimento"></div>
+                <div class="campo"><label>Recorrência</label><select id="contaRecorrencia">
+                    <option value="unica">Única vez</option>
+                    <option value="mensal">Mensal</option>
+                    <option value="anual">Anual</option>
+                </select></div>
+                <div class="campo"><label>Obs</label><input type="text" id="contaObs"></div>
+            </div>
+            <div class="linha" style="margin-top:0.5rem;">
+                <button class="btn secundario" onclick="alternarFormContas()">❌ Cancelar</button>
+                <button class="btn sucesso" onclick="cadastrarConta()">✅ Cadastrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTA → SÓ CONTAS NÃO PAGAS APARECEM AQUI -->
+    <div id="listaContas"></div>
+</div>
+
+<!-- POP-UP DE AVISO -->
+<div class="fundo-popup" id="popupAviso">
+    <div class="caixa-popup aviso">
+        <h3>⚠️ AVISO DE VENCIMENTO</h3>
+        <p id="textoPopupAviso"></p>
+        <button class="btn-ok" onclick="fecharPopupAviso()">Entendido</button>
+    </div>
+</div>
+
+<!-- POP-UP DE ATRASO -->
+<div class="fundo-popup" id="popupAtraso">
+    <div class="caixa-popup atraso">
+        <h3>🔴 CONTA ATRASADA!</h3>
+        <p id="textoPopupAtraso"></p>
+        <button class="btn-ok" onclick="fecharPopupAtraso()">Vou Pagar</button>
+    </div>
+</div>
+
+<script>
+    let contas = [];
+
+    function formatarMoeda(v) { return Number(v||0).toFixed(2).replace('.',','); }
+    function formatarDataBR(d) { if(!d)return''; const [a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; }
+    function hojeData() { return new Date(new Date().toDateString()); }
+    function chaveDia(id) { return `aviso_${id}_${hojeData().toDateString()}`; }
+
+    // === VERIFICA STATUS ===
+    function verificarStatusConta(conta) {
+        if (conta.paga) return { classe:'pago', mensagem:`✅ Paga em ${formatarDataBR(conta.dataPagamento)}`, tipo:null };
+
+        const venc = new Date(conta.vencimento+'T00:00:00');
+        const hoje = hojeData();
+        const diff = Math.ceil((venc - hoje)/(1000*60*60*24));
+
+        // ⚠️ FALTAM 2 DIAS → POP-UP
+        if (diff === 2) {
+            const chave = `aviso2dias_${conta.id}_${hoje.toDateString()}`;
+            if (!localStorage.getItem(chave)) {
+                localStorage.setItem(chave, 'exibido');
+                setTimeout(() => mostrarPopupAviso(conta), 600);
+            }
+            return { classe:'vencer', mensagem:`📄 Vence em 2 dias`, tipo:'aviso' };
+        }
+
+        // 🔴 ATRASADA → POP-UP até 2x ao dia
+        if (diff < 0) {
+            const dias = Math.abs(diff);
+            const chave = chaveDia(conta.id);
+            const qtd = parseInt(localStorage.getItem(chave)||'0');
+            if (qtd < 2) {
+                localStorage.setItem(chave, qtd+1);
+                setTimeout(() => mostrarPopupAtraso(conta, dias), 800);
+            }
+            return { classe:'atrasado', mensagem:`🔴 ATRASADA há ${dias} dia(s)`, tipo:'atrasado', dias };
+        }
+
+        return { classe:'vencer', mensagem:`📄 Vence em ${diff} dia(s)`, tipo:null };
+    }
+
+    // === POP-UPS ===
+    function mostrarPopupAviso(conta) {
+        document.getElementById('textoPopupAviso').innerHTML = 
+            `A conta <strong>${conta.nome}</strong> vence em <strong>2 dias</strong>.<br><br>Valor: <strong>R$ ${formatarMoeda(conta.valor)}</strong><br>Vencimento: ${formatarDataBR(conta.vencimento)}<br><br>Providencie o pagamento.`;
+        document.getElementById('popupAviso').classList.add('aberto');
+    }
+    function fecharPopupAviso() { document.getElementById('popupAviso').classList.remove('aberto'); }
+
+    function mostrarPopupAtraso(conta, dias) {
+        document.getElementById('textoPopupAtraso').innerHTML = 
+            `A conta <strong>${conta.nome}</strong> está ATRASADA há <strong>${dias} dia(s)</strong>!<br><br>Valor: <strong>R$ ${formatarMoeda(conta.valor)}</strong><br>Vencimento: ${formatarDataBR(conta.vencimento)}<br><strong>Regularize o quanto antes!</strong>`;
+        document.getElementById('popupAtraso').classList.add('aberto');
+    }
+    function fecharPopupAtraso() { document.getElementById('popupAtraso').classList.remove('aberto'); }
+
+    // === FORMULÁRIO ===
+    function alternarFormContas() {
+        document.getElementById('formContas').classList.toggle('aberto');
+        ['contaNome','contaValor','contaVencimento','contaObs'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('contaRecorrencia').value='unica';
+    }
+    function cadastrarConta() {
+        const nome = document.getElementById('contaNome').value.trim();
+        const valor = parseFloat(document.getElementById('contaValor').value||0);
+        const venc = document.getElementById('contaVencimento').value;
+        const rec = document.getElementById('contaRecorrencia').value;
+        const obs = document.getElementById('contaObs').value.trim()||'-';
+        if(!nome||!valor||!venc) return alert('Preencha Nome, Valor e Vencimento!');
+        contas.push({id:Date.now(),nome,valor,vencimento:venc,recorrencia:rec,obs,paga:false,dataPagamento:null});
+        salvarContas(); alternarFormContas(); alert('✅ Conta cadastrada!');
+    }
+
+    // === ✅ AO PAGAR → CONTA SOME DA LISTA ===
+    function marcarComoPaga(id) {
+        const c = contas.find(x=>x.id===id); if(!c)return;
+        c.paga=true; c.dataPagamento=new Date().toISOString().split('T')[0];
+        
+        let mensagem = '✅ Conta PAGA! Saiu da lista.';
+        if(c.recorrencia!=='unica'){
+            const prox=new Date(c.vencimento+'T00:00:00');
+            c.recorrencia==='mensal'?prox.setMonth(prox.getMonth()+1):prox.setFullYear(prox.getFullYear()+1);
+            contas.push({id:Date.now(),nome:c.nome,valor:c.valor,vencimento:prox.toISOString().split('T')[0],recorrencia:c.recorrencia,obs:c.obs,paga:false,dataPagamento:null});
+            mensagem += '\n🔄 Próxima conta gerada!';
+        }
+        
+        salvarContas();  // ← Atualiza lista e conta SOME imediatamente
+        alert(mensagem);
+    }
+
+    // === 🗑️ AO EXCLUIR → CONTA SOME DA LISTA ===
+    function excluirConta(id) {
+        if(confirm('Tem certeza? A conta será removida da lista.')){
+            contas = contas.filter(x=>x.id!==id);
+            salvarContas();  // ← Atualiza lista e conta SOME imediatamente
+        }
+    }
+
+    // === SALVAR E RENDERIZAR ===
+    function salvarContas() {
+        localStorage.setItem('contas_some_ao_pagar',JSON.stringify(contas));
+        renderizarContas();
+        atualizarResumo();
+    }
+
+    function renderizarContas() {
+        const lista=document.getElementById('listaContas');
+        lista.innerHTML='';
+
+        // ✅ SÓ MOSTRA CONTAS NÃO PAGAS NA LISTA
+        const contasAtivas = contas.filter(c => !c.paga);
+
+        // Ordena: Atrasadas primeiro → A Vencer
+        contasAtivas.sort((a,b)=>{
+            const ordem={atrasado:0,vencer:1};
+            return ordem[verificarStatusConta(a).classe]-ordem[verificarStatusConta(b).classe] || new Date(a.vencimento)-new Date(b.vencimento);
+        });
+
+        if(contasAtivas.length===0){
+            lista.innerHTML='<p style="text-align:center;color:#666;padding:1.5rem;">✅ Nenhuma conta pendente.</p>';
+            return;
+        }
+
+        contasAtivas.forEach(c=>{
+            const st=verificarStatusConta(c);
+            const tag=c.recorrencia==='mensal'?'📅 Mensal':c.recorrencia==='anual'?'📅 Anual':'📅 Única';
+            lista.innerHTML+=`
+                <div class="item-conta ${st.classe}">
+                    <strong>${c.nome}</strong> <span class="recorrencia-tag">${tag}</span>
+                    <div style="margin:0.4rem 0;">Valor: R$ ${formatarMoeda(c.valor)} | Venc.: ${formatarDataBR(c.vencimento)}</div>
+                    <div><strong>${st.mensagem}</strong></div>
+                    <div class="acoes-conta">
+                        <button class="btn sucesso pequeno" onclick="marcarComoPaga(${c.id})">✅ Pagar</button>
+                        <button class="btn perigo pequeno" onclick="excluirConta(${c.id})">🗑️ Excluir</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function atualizarResumo() {
+        let ven=0, atr=0, pag=0;
+        contas.forEach(c=>{
+            if(c.paga) pag+=c.valor;
+            else if(verificarStatusConta(c).classe==='atrasado') atr+=c.valor;
+            else ven+=c.valor;
+        });
+        document.getElementById('resumoVencer').textContent=`R$ ${formatarMoeda(ven)}`;
+        document.getElementById('resumoAtrasado').textContent=`R$ ${formatarMoeda(atr)}`;
+        document.getElementById('resumoPago').textContent=`R$ ${formatarMoeda(pag)}`;
+    }
+
+    // === INICIALIZAÇÃO ===
+    window.onload=()=>{
+        const s=localStorage.getItem('contas_some_ao_pagar'); if(s) contas=JSON.parse(s);
+        renderizarContas(); atualizarResumo();
+    };
+</script>
+
+</body>
+</html>
