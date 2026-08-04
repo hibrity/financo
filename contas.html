@@ -1,659 +1,437 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financo - Controle Financeiro</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.1/dist/umd/supabase.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas — Lançamentos</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        html { background: #f5f5f5; }
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f5f5f5; padding: 1rem; max-width: 900px; margin: 0 auto; }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { font-size: 16px; }
-        body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
-        .cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        h1 { color: #1565c0; font-size: 1.75rem; margin: 0; }
-        .btn-sair { display: none; }
-        .barra-botoes { display: flex; gap: 0.75rem; align-items: stretch; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 0; min-width: 140px; max-width: 200px; }
-        .btn { width: 100%; padding: 0.75rem 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; transition: 0.2s; white-space: nowrap; text-decoration: none; }
+        .btn-voltar { margin-bottom: 1rem; }
+        .btn-voltar button { padding: 0.6rem 1rem; border: none; border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem; transition: 0.2s; background: #616161; color: white; }
+        .btn-voltar button:hover { background: #424242; }
+
+        .aviso-lancamento {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+            color: white; padding: 1.3rem; border-radius: 0.8rem;
+            margin-bottom: 1.5rem; display: none; animation: surgir 0.6s ease-out;
+            box-shadow: 0 4px 15px rgba(13, 71, 161, 0.35);
+        }
+        .aviso-lancamento.mostrar { display: block; }
+        @keyframes surgir {
+            from { transform: translateY(-15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .aviso-lancamento h4 { font-size: 1.15rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .aviso-lancamento .linha-aviso { margin: 0.4rem 0; font-size: 0.98rem; }
+        .aviso-lancamento .linha-aviso strong { color: #bbdefb; }
+        .aviso-lancamento .codigo { font-family: 'Courier New', monospace; font-size: 0.88rem; margin-top: 0.7rem; padding: 0.4rem; background: rgba(255,255,255,0.15); border-radius: 0.3rem; }
+
+        .secao-contas { padding: 1.25rem; background: #fff; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.08); margin-bottom: 1.25rem; }
+        .titulo-secao { font-size: 1.25rem; color: #1565c0; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+        .btn { padding: 0.6rem 1rem; border: none; border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
         .btn.primario { background: #1565c0; color: white; }
-        .btn.primario:hover { background: #0d47a1; }
-        .btn.sucesso { background: #2e7d32; color: white; font-size: 1.05rem; padding: 1rem; }
-        .btn.sucesso:hover { background: #1b5e20; }
-        .btn.secundario { background: #e0e0e0; color: #333; }
-        .btn.secundario:hover { background: #bdbdbd; }
-        .btn.voltar { background: #616161; color: white; }
-        .btn.voltar:hover { background: #424242; }
-        .btn.perigo { background: #c62828; color: white; }
-        .btn.perigo:hover { background: #8e0000; }
-        .btn.pequeno { padding: 0.5rem; font-size: 0.85rem; }
+        .btn.sucesso { background: #2e7d32; color: white; }
         .btn.aviso { background: #f57c00; color: white; }
-        .btn.aviso:hover { background: #ef6c00; }
+        .btn.secundario { background: #e0e0e0; color: #333; }
+        .btn.perigo { background: #c62828; color: white; }
+        .btn.pequeno { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
 
-        .area-continuar { display: none; margin: 2rem 0 3rem 0; text-align: center; }
-        .area-continuar.mostrar { display: block; }
+        .resumo-contas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+        @media(max-width:600px){ .resumo-contas{ grid-template-columns:1fr; } }
+        .card-resumo { padding: 1rem; border-radius: 0.5rem; text-align: center; color: white; }
+        .card-resumo.vencer { background: #1976d2; }
+        .card-resumo.atrasado { background: #c62828; }
+        .card-resumo.pago { background: #2e7d32; }
+        .card-resumo .val { font-size: 1.25rem; font-weight: bold; margin-top: 0.3rem; }
 
-        .menu-gerenciar { display: none; position: absolute; background: white; border-radius: 0.5rem; box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.15); padding: 1rem; min-width: 17.5rem; max-width: 90vw; z-index: 100; margin-top: 0.3125rem; }
-        .menu-gerenciar.aberto { display: block; }
-        .grupo-lista { margin-bottom: 1rem; }
-        .grupo-lista h4 { font-size: 0.875rem; color: #444; margin-bottom: 0.5rem; }
-        .item-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.375rem 0; border-bottom: 1px solid #eee; }
-        .item-linha input { flex: 1; padding: 0.375rem; border: 1px solid #ddd; border-radius: 0.25rem; font-size: 0.875rem; min-width: 0; }
-        .btn-acao { padding: 0.25rem 0.5rem; font-size: 0.8125rem; border: none; border-radius: 0.25rem; cursor: pointer; flex-shrink: 0; }
-        .btn-acao.salvar { background: #2e7d32; color: white; }
-        .btn-acao.excluir { background: #c62828; color: white; }
-        .btn-acao.adicionar { background: #1565c0; color: white; margin-top: 0.5rem; width: 100%; }
-
-        .form { background: white; padding: 0 1.25rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; }
-        .form.aberto { padding: 1.25rem; max-height: 1000px; opacity: 1; }
-
-        .linha { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 0.9375rem; align-items: flex-end; }
-        .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3125rem; min-width: 0; }
+        .formulario { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; margin-bottom: 1.25rem; }
+        .formulario.aberto { max-height: 2000px; opacity: 1; }
+        .form-interno { padding: 1.25rem; background: #f9f9f9; border-radius: 0.5rem; }
+        .linha { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.9rem; align-items: flex-end; }
+        .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; }
         label { font-size: 0.875rem; color: #333; font-weight: 500; }
-        input, select { padding: 0.625rem; border: 1px solid #ccc; border-radius: 0.375rem; font-size: 0.9375rem; background: white; }
+        input, select { padding: 0.6rem; border: 1px solid #ccc; border-radius: 0.35rem; font-size: 0.95rem; }
         input:focus, select:focus { outline: none; border-color: #1565c0; }
-        .tipo { display: flex; gap: 1rem; padding-top: 0.625rem; flex-wrap: wrap; }
-        .tipo label { white-space: nowrap; }
 
-        #data, #edtData { max-width: 160px; flex: 0 0 auto; }
+        .item-conta { padding: 0.9rem; border-radius: 0.5rem; margin-bottom: 0.6rem; border-left: 5px solid; background: #fafafa; }
+        .item-conta.vencer { border-left-color: #1976d2; background: #f0f7ff; }
+        .item-conta.atrasado { border-left-color: #c62828; background: #ffebee; }
+        .tag-automatico { display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.4rem; background: #e8f5e8; color: #2e7d32; border-radius: 0.25rem; margin-left: 0.5rem; }
+        .acoes-conta { margin-top: 0.7rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-        .tabela { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.25rem; width: 100%; overflow: hidden; }
-        .tabela-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.875rem 0.625rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.875rem; }
-        th { background: #1565c0; color: white; font-weight: 600; }
-        .venda { color: #2e7d32; font-weight: 600; }
-        .despesa { color: #c62828; font-weight: 600; }
-        .acao-coluna { width: 110px; text-align: center; }
-
-        @media (max-width: 768px) {
-            .tabela-wrapper { overflow: visible; }
-            table, thead, tbody, th, td, tr { display: block; width: 100%; }
-            thead { display: none; }
-            tr { margin-bottom: 1rem; border-bottom: 2px solid #f0f0f0; background: #fafafa; border-radius: 0.5rem; padding: 0.5rem; }
-            td { padding: 0.625rem 0.5rem; border: none; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-            td::before { content: attr(etiqueta); font-weight: 600; color: #444; text-transform: uppercase; font-size: 0.75rem; }
-            .acao-coluna { width: 100%; justify-content: center; gap: 0.5rem; padding: 0.75rem 0.5rem; }
-            .acao-coluna::before { display: none; }
-        }
-
-        .totais { display: flex; gap: 0.9375rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .card { flex: 1 1 13.75rem; padding: 1.25rem; border-radius: 0.5rem; color: white; text-align: center; }
-        .card.vendas { background: #2e7d32; }
-        .card.despesas { background: #c62828; }
-        .card.saldo { background: #1565c0; }
-        .valor { font-size: 1.5rem; font-weight: bold; margin-top: 0.3125rem; }
-
-        .pagina { display: none; }
-        .pagina.ativa { display: block; }
-        .cabecalho-pagina { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-        .titulo-pagina { font-size: 1.5rem; color: #1565c0; }
-
-        .caixa-exportar, .caixa-integracao { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        .caixa-exportar h3, .caixa-integracao h3 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
-        .modal.aberto { display: flex; }
-        .conteudo-modal { background: white; padding: 1.5rem; border-radius: 0.5rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
-        .cabecalho-modal { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-        .cabecalho-modal h3 { color: #1565c0; font-size: 1.2rem; }
-        .btn-fechar { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0; width: auto; }
-        .btn-fechar:hover { color: #222; }
-
-        @media print {
-            body * { visibility: hidden; }
-            .pagina.ativa, .pagina.ativa * { visibility: visible; }
-            .pagina.ativa { position: absolute; left: 0; top: 0; width: 100%; }
-            .barra-botoes, .cabecalho-pagina button, .caixa-exportar { display: none !important; }
-        }
-
-        @media (min-width: 992px) { .barra-botoes { flex-wrap: nowrap; } .barra-botoes > div, .barra-botoes > .btn { flex: 1; max-width: none; } }
-        @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } .cabecalho { flex-direction: column; align-items: flex-start; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .btn.pequeno { width: 100%; } }
-
-        /* === ESTILOS DOS POP-UPS DE AVISOS === */
-        .fundo-popup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; z-index:9999; padding:1rem; }
-        .fundo-popup.aberto { display:flex; }
-        .caixa-popup { background:white; padding:2rem; border-radius:0.8rem; max-width:420px; width:100%; box-shadow:0 0.5rem 2rem rgba(0,0,0,0.25); border-top:0.5rem solid; animation: aparecer 0.3s ease-out; }
-        @keyframes aparecer { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
-        .caixa-popup h3 { font-size:1.3rem; margin-bottom:1rem; text-align:center; }
-        .caixa-popup p { font-size:1rem; line-height:1.6; margin-bottom:1.5rem; color:#333; text-align:center; }
-        .caixa-popup .btn-ok { width:100%; padding:0.8rem; font-size:1rem; font-weight:bold; border:none; border-radius:0.5rem; cursor:pointer; color:white; margin-top:0.5rem; }
-        .caixa-popup .btn-secundario { background:#e0e0e0; color:#333; width:100%; padding:0.7rem; margin-top:0.5rem; border:none; border-radius:0.5rem; cursor:pointer; font-weight:500; }
-        .caixa-popup.atraso { border-color:#c62828; }
-        .caixa-popup.atraso h3 { color:#c62828; }
-        .caixa-popup.atraso .btn-ok { background:#c62828; }
-        .caixa-popup.amanha { border-color:#f57c00; }
-        .caixa-popup.amanha h3 { color:#e65100; }
-        .caixa-popup.amanha .btn-ok { background:#f57c00; }
-
-        .aviso-topo { margin-bottom: 1rem; min-height: 0; }
+        /* ESTILOS DO LEITOR */
+        .fundo-leitor { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; padding: 1rem; flex-direction: column; align-items: center; justify-content: center; }
+        .fundo-leitor.aberto { display: flex; }
+        .caixa-leitor { width: 100%; max-width: 500px; background: white; border-radius: 0.8rem; overflow: hidden; }
+        .cabecalho-leitor { padding: 1rem; background: #1565c0; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .area-camera { width: 100%; min-height: 300px; background: #000; }
+        .botoes-leitor { padding: 1rem; display: flex; gap: 0.5rem; justify-content: center; }
+        .resultado-leitura { padding: 1rem; background: #e3f2fd; border-top: 1px solid #ddd; display: none; }
+        .resultado-leitura.mostrar { display: block; }
     </style>
 </head>
 <body>
 
-<div id="conteudo-principal">
-<script>
-    const SUPABASE_URL = 'https://jigsckumatxoxveqatpb.supabase.co';
-    const SUPABASE_CHAVE = 'sb_publishable_w1CpoC-qE6XkoGGzHvmK2A_nOFo8HRy';
-    const TABELA_SUPABASE = 'financo_dados';
-    let supabase;
-
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            if (window.supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-                console.log('✅ Integração com Supabase ativada');
-            } else {
-                throw new Error('Biblioteca do Supabase não carregou');
-            }
-        } catch (erro) {
-            console.error('❌ Erro ao inicializar Supabase:', erro);
-        }
-
-        const salvos = localStorage.getItem('financoPastaSalvos');
-        if(salvos) pastaUltimosSalvos = JSON.parse(salvos);
-        document.getElementById('data').value = dataHoje();
-
-        document.getElementById('venda').addEventListener('change', atualizarSelectPorTipo);
-        document.getElementById('despesa').addEventListener('change', atualizarSelectPorTipo);
-        document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
-        document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
-        document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
-
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                carregarAvisos();
-                atualizarSoma();
-            }
-        });
-
-        carregarAvisos();
-        atualizarSoma();
-    });
-
-    function sair() {}
-</script>
-
-<div class="pagina ativa" id="paginaPrincipal">
-    <div class="cabecalho">
-        <h1>🔹 Financo</h1>
-        <button class="btn-sair" onclick="sair()">🚪 Sair</button>
-    </div>
-
-    <div class="aviso-topo" id="caixaAvisos"></div>
-
-    <div class="barra-botoes">
-        <div style="position: relative;">
-            <button class="btn primario" onclick="alternarMenuGerenciar()">⚙️ Gerenciar Itens ▼</button>
-            <div class="menu-gerenciar" id="menuGerenciar">
-                <div class="grupo-lista">
-                    <h4>📈 Itens de Venda / Entrada</h4>
-                    <div id="listaVenda"></div>
-                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('venda')">+ Adicionar Item</button>
-                </div>
-                <div class="grupo-lista">
-                    <h4>📉 Itens de Despesa / Saída</h4>
-                    <div id="listaDespesa"></div>
-                    <button class="btn-acao adicionar" onclick="adicionarNovoItem('despesa')">+ Adicionar Item</button>
-                </div>
-                <button class="btn-acao salvar" style="width:100%; margin-top:0.75rem;" onclick="salvarItensMenu()">✅ Salvar Alterações</button>
-            </div>
-        </div>
-        <button class="btn primario" onclick="alternarFormulario()">➕ Novo Lançamento</button>
-        <button class="btn secundario" onclick="abrirPastaUltimosSalvos()">🕒 Últimos Salvos</button>
-        <button class="btn secundario" onclick="window.location.href='contas.html'">📋 Contas</button>
-        <button class="btn secundario" onclick="irParaPaginaIntegracao()">🔗 Integração</button>
-        <button class="btn secundario" onclick="abrirCamera()">📷 Lançar via Câmera</button>
-    </div>
-
-    <div class="form" id="formulario">
-        <div class="linha">
-            <div class="campo">
-                <label>Data</label>
-                <input type="text" id="data" placeholder="dd/mm/aaaa" maxlength="10">
-            </div>
-            <div class="campo">
-                <label>Tipo</label>
-                <div class="tipo">
-                    <label><input type="radio" name="tipoLancamento" id="venda" value="venda"> Venda / Entrada</label>
-                    <label><input type="radio" name="tipoLancamento" id="despesa" value="despesa"> Despesa / Saída</label>
-                </div>
-            </div>
-            <div class="campo">
-                <label>Item</label>
-                <select id="item"><option value="">Selecione primeiro o tipo</option></select>
-            </div>
-        </div>
-        <div class="linha">
-            <div class="campo">
-                <label>Valor R$</label>
-                <input type="number" step="0.01" min="0.01" id="valor" placeholder="0,00">
-            </div>
-            <div class="campo">
-                <label>Pagamento</label>
-                <select id="pagamento">
-                    <option value="">Selecione</option>
-                    <option>Dinheiro</option>
-                    <option>Pix</option>
-                    <option>Cartão Crédito</option>
-                    <option>Cartão Débito</option>
-                </select>
-            </div>
-            <div class="campo" style="flex: 2 1 18.75rem;">
-                <label>Observação</label>
-                <input type="text" id="obs" placeholder="Opcional">
-            </div>
-        </div>
-    </div>
-
-    <div class="tabela">
-        <div class="tabela-wrapper">
-            <table>
-                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th></tr></thead>
-                <tbody id="corpoTabela"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="totais">
-        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="totalVendas">R$ 0,00</div></div>
-        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="totalDespesas">R$ 0,00</div></div>
-        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="saldo">R$ 0,00</div></div>
-    </div>
-
-    <div class="area-continuar" id="areaContinuar">
-        <button class="btn sucesso" onclick="irParaPaginaExportar()">✅ Continuar para Salvar/Exportar</button>
-    </div>
+<div class="btn-voltar">
+    <button onclick="window.location.href='index.html'">⬅️ Voltar ao Painel Principal</button>
 </div>
 
-<div class="pagina" id="paginaExportar">
-    <div class="cabecalho-pagina">
-        <button class="btn voltar" style="width: auto;" onclick="voltarParaPrincipal()">⬅️ Voltar</button>
-        <h2 class="titulo-pagina">💾 Salvar e Exportar</h2><div></div>
-    </div>
-    <div class="tabela">
-        <div class="tabela-wrapper">
-            <table>
-                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th class="acao-coluna">Ações</th></tr></thead>
-                <tbody id="tabelaExportar"></tbody>
-            </table>
-        </div>
-    </div>
-    <div class="totais">
-        <div class="card vendas"><div>Total Vendas</div><div class="valor" id="expTotalVendas">R$ 0,00</div></div>
-        <div class="card despesas"><div>Total Despesas</div><div class="valor" id="expTotalDespesas">R$ 0,00</div></div>
-        <div class="card saldo"><div>Saldo Líquido</div><div class="valor" id="expSaldo">R$ 0,00</div></div>
-    </div>
-    <div class="caixa-exportar">
-        <h3>Opções de Salvamento e Impressão</h3>
-        <div class="grupo-botoes-exportar">
-            <button class="btn primario" onclick="salvarNaPastaInterna()">💾 Salvar Localmente</button>
-            <button class="btn secundario" onclick="window.print()">🖨️ Imprimir</button>
-            <button class="btn sucesso" onclick="salvarNoSupabase()">☁️ Salvar tudo na Nuvem</button>
-        </div>
-    </div>
+<div class="aviso-lancamento" id="avisoNovoLancamento">
+    <h4>📢 LANÇAMENTO RECEBIDO</h4>
+    <div class="linha-aviso">Emitente: <strong id="avisoEmitente"></strong></div>
+    <div class="linha-aviso">Tipo: <strong id="avisoTipo"></strong></div>
+    <div class="linha-aviso">Valor: <strong id="avisoValor"></strong></div>
+    <div class="linha-aviso">Vencimento: <strong id="avisoVenc"></strong></div>
+    <div class="codigo">Código: <span id="avisoCodigo"></span></div>
 </div>
 
-<div class="modal" id="modalEditar">
-    <div class="conteudo-modal">
-        <h3>✏️ Editar Lançamento</h3>
-        <div class="linha">
-            <div class="campo"><label>Data</label><input type="text" id="edtData" placeholder="dd/mm/aaaa" maxlength="10"></div>
-            <div class="campo"><label>Tipo</label>
-                <div class="tipo">
-                    <label><input type="radio" name="edtTipo" id="edtVenda" value="venda"> Venda</label>
-                    <label><input type="radio" name="edtTipo" id="edtDespesa" value="despesa"> Despesa</label>
+<div class="secao-contas">
+    <div class="titulo-secao">
+        <span>🧾 Minhas Contas</span>
+        <div style="display:flex; gap:0.5rem;">
+            <button class="btn aviso pequeno" onclick="abrirLeitor()">📷 Ler Código</button>
+            <button class="btn primario pequeno" onclick="abrirFormManual()">+ Adicionar</button>
+        </div>
+    </div>
+
+    <div class="resumo-contas">
+        <div class="card-resumo vencer"><div>📄 A VENCER</div><div class="val" id="resumoVencer">R$ 0,00</div></div>
+        <div class="card-resumo atrasado"><div>🔴 ATRASADAS</div><div class="val" id="resumoAtrasado">R$ 0,00</div></div>
+        <div class="card-resumo pago"><div>✅ PAGAS</div><div class="val" id="resumoPago">R$ 0,00</div></div>
+    </div>
+
+    <div class="formulario" id="formManual">
+        <div class="form-interno">
+            <div class="linha">
+                <div class="campo" style="flex:2;"><label>Descrição / Fornecedor</label><input type="text" id="nomeManual" placeholder="Ex: Aluguel, Sadia"></div>
+                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="valorManual"></div>
+            </div>
+            <div class="linha">
+                <div class="campo"><label>Vencimento</label><input type="text" id="vencManual" placeholder="dd/mm/aaaa" maxlength="10" oninput="aplicarMascaraData(this)"></div>
+                <div class="campo"><label>Recorrência</label>
+                    <select id="recorrenciaManual">
+                        <option value="unica">Única vez</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="anual">Anual</option>
+                    </select>
                 </div>
             </div>
-            <div class="campo"><label>Item</label><select id="edtItem"></select></div>
-        </div>
-        <div class="linha">
-            <div class="campo"><label>Valor R$</label><input type="number" step="0.01" min="0.01" id="edtValor"></div>
-            <div class="campo"><label>Pagamento</label><select id="edtPagamento"><option>Dinheiro</option><option>Pix</option><option>Cartão Crédito</option><option>Cartão Débito</option></select></div>
-            <div class="campo" style="flex: 2 1 18.75rem;"><label>Observação</label><input type="text" id="edtObs"></div>
-        </div>
-        <div class="linha" style="margin-top: 1rem;">
-            <button class="btn secundario" style="flex:1;" onclick="fecharModal()">❌ Cancelar</button>
-            <button class="btn sucesso" style="flex:1;" onclick="salvarEdicao()">✅ Salvar</button>
+            <div class="linha">
+                <div class="campo"><label>Código de Barras / Linha Digitável</label><input type="text" id="codigoBoleto" placeholder="Cole ou leia o código aqui"></div>
+            </div>
+            <div class="linha" style="margin-top:0.5rem;">
+                <button class="btn secundario" onclick="fecharFormManual()">❌ Cancelar</button>
+                <button class="btn sucesso" onclick="salvarLancamentoManual()">✅ Salvar</button>
+            </div>
         </div>
     </div>
+
+    <div id="listaContas"></div>
 </div>
 
-<div class="fundo-popup" id="popupAvisoGeral">
-    <div class="caixa-popup" id="caixaPopupAtual">
-        <h3 id="tituloPopup"></h3>
-        <p id="textoPopup"></p>
-        <button class="btn-ok" id="btnAcaoPopup"></button>
-        <button class="btn-secundario" id="btnProximoPopup" style="display:none;">Próximo Aviso</button>
+<!-- JANELA DO LEITOR DE CÂMERA -->
+<div class="fundo-leitor" id="fundoLeitor">
+    <div class="caixa-leitor">
+        <div class="cabecalho-leitor">
+            <h5>📷 Leitor de Código</h5>
+            <button class="btn pequeno" style="background:rgba(255,255,255,0.2); color:white;" onclick="fecharLeitor()">✕ Fechar</button>
+        </div>
+        <div id="cameraLeitor" class="area-camera"></div>
+        <div class="resultado-leitura" id="resultadoLeitura">
+            <strong>Código lido:</strong>
+            <p id="textoLido" style="margin:0.5rem 0; word-break:break-all;"></p>
+            <div class="botoes-leitor">
+                <button class="btn secundario pequeno" onclick="limparLeitura()">Limpar</button>
+                <button class="btn sucesso pequeno" onclick="usarCodigo()">✅ Usar esse código</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    let lancamentos = [];
-    let ultimo = '';
-    let itensVenda = ['Venda de Produto', 'Serviço Prestado'];
-    let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
-    let indiceEdicaoAtual = null;
-    let pastaUltimosSalvos = [];
-    let listaAvisos = [];
-    let indiceAvisoAtual = 0;
+    let contas = [];
+    let emitentesPermitidos = JSON.parse(localStorage.getItem('emitentes_autorizados') || '["Sadia", "Energia", "Água", "Aluguel", "Internet"]');
+    let leitorCamera = null;
+    let ultimoCodigoLido = '';
 
-    function dataHoje() {
-        const d = new Date();
-        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    function aplicarMascaraData(campo) {
+        let valor = campo.value.replace(/\D/g, '');
+        if (valor.length > 8) valor = valor.substring(0,8);
+        if (valor.length > 4) valor = valor.substring(0,2) + '/' + valor.substring(2,4) + '/' + valor.substring(4);
+        else if (valor.length > 2) valor = valor.substring(0,2) + '/' + valor.substring(2);
+        campo.value = valor;
     }
 
-    function alternarFormulario() { document.getElementById('formulario').classList.toggle('aberto'); }
-
-    function abrirCamera() {
-        window.open('lancamento-camera.html', '_blank', 'width=450,height=800');
-    }
-
-    function atualizarSelectPorTipo() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const select = document.getElementById('item');
-        select.innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-        if (ehVenda) itensVenda.forEach(n => select.appendChild(new Option(n, n)));
-        else if (ehDespesa) itensDespesa.forEach(n => select.appendChild(new Option(n, n)));
-        verificarPreenchimentoAutomatico();
-    }
-
-    function verificarPreenchimentoAutomatico() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const data = document.getElementById('data').value.trim();
-        const item = document.getElementById('item').value.trim();
-        const valor = parseFloat(document.getElementById('valor').value || 0);
-        const pag = document.getElementById('pagamento').value.trim();
-
-        if(data && (ehVenda || ehDespesa) && item && valor > 0 && pag) salvar();
-    }
-
-    function salvar() {
-        const ehVenda = document.getElementById('venda').checked;
-        const ehDespesa = document.getElementById('despesa').checked;
-        const data = document.getElementById('data').value.trim();
-        const item = document.getElementById('item').value.trim();
-        const valor = parseFloat(document.getElementById('valor').value || 0);
-        const pag = document.getElementById('pagamento').value.trim();
-        const obs = document.getElementById('obs').value.trim() || '-';
-
-        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return;
-
-        const chave = `${data}${ehVenda}${item}${valor}${pag}`;
-        if(chave === ultimo) return;
-        ultimo = chave;
-
-        lancamentos.push({data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs});
-        atualizarTabela();
-        atualizarSoma();
-        limparCampos();
-        verificarBotaoContinuar();
-    }
-
-    function atualizarTabela() {
-        const tab = document.getElementById('corpoTabela');
-        tab.innerHTML = '';
-        [...lancamentos].reverse().forEach(l => {
-            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda / Entrada' : 'Despesa / Saída'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td></tr>`;
-        });
+    function formatarMoeda(v) { return Number(v||0).toFixed(2).replace('.',','); }
+    function converterISO(dataBR) {
+        if(!dataBR) return null;
+        const [dd,mm,aaaa] = dataBR.split('/');
+        if(!dd || !mm || !aaaa) return null;
+        return `${aaaa}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
     }
 
     function hojeData() { return new Date(new Date().toDateString()); }
 
-    function atualizarSoma() {
-        let v = 0, d = 0;
-        lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
+    // ==============================================
+    // FUNÇÕES DO LEITOR DE CÂMERA
+    // ==============================================
+    async function abrirLeitor() {
+        document.getElementById('fundoLeitor').classList.add('aberto');
+        ultimoCodigoLido = '';
+        document.getElementById('resultadoLeitura').classList.remove('mostrar');
         
-        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        if(!leitorCamera) {
+            leitorCamera = new Html5Qrcode("cameraLeitor");
+        }
+
+        try {
+            await leitorCamera.start(
+                { facingMode: "environment" },
+                { fps: 15, qrbox: {width: 250, height: 250} },
+                (texto) => {
+                    ultimoCodigoLido = texto;
+                    document.getElementById('textoLido').textContent = texto;
+                    document.getElementById('resultadoLeitura').classList.add('mostrar');
+                },
+                (erro) => {}
+            );
+        } catch (e) {
+            alert('❌ Não foi possível acessar a câmera! Verifique as permissões do navegador.');
+            fecharLeitor();
+        }
+    }
+
+    async function fecharLeitor() {
+        document.getElementById('fundoLeitor').classList.remove('aberto');
+        if(leitorCamera && leitorCamera.isScanning) {
+            await leitorCamera.stop();
+        }
+    }
+
+    function limparLeitura() {
+        ultimoCodigoLido = '';
+        document.getElementById('resultadoLeitura').classList.remove('mostrar');
+    }
+
+    function usarCodigo() {
+        if(!ultimoCodigoLido) return alert('Nenhum código foi lido ainda!');
+        document.getElementById('codigoBoleto').value = ultimoCodigoLido;
+        fecharLeitor();
+        abrirFormManual();
+        extrairDadosBoleto(ultimoCodigoLido);
+    }
+
+    function extrairDadosBoleto(codigo) {
+        codigo = codigo.replace(/\D/g, '');
+        if(codigo.length < 44) return;
+
+        try {
+            let valor = 0;
+            let vencimento = '';
+
+            if(codigo.length === 47) {
+                const fator = parseInt(codigo.substring(33,37));
+                valor = parseInt(codigo.substring(37)) / 100;
+                const dataBase = new Date('1997-10-07');
+                dataBase.setDate(dataBase.getDate() + fator);
+                vencimento = dataBase.toISOString().split('T')[0].split('-').reverse().join('/');
+            }
+
+            if(valor > 0) document.getElementById('valorManual').value = valor.toFixed(2);
+            if(vencimento) document.getElementById('vencManual').value = vencimento;
+            document.getElementById('nomeManual').value = 'Boleto Bancário';
+        } catch(e) {
+            console.log('Não foi possível extrair dados automaticamente, preencha manualmente');
+        }
+    }
+
+    // ==============================================
+    // FUNÇÃO DE RECEBIMENTO AUTOMÁTICO
+    // ==============================================
+    function receberLancamento(emitente, tipo, valor, vencimento, numeroDoc = "") {
+        if (!emitente || !valor || !converterISO(vencimento)) return;
+
+        if (!emitentesPermitidos.includes(emitente)) {
+            emitentesPermitidos.push(emitente);
+            localStorage.setItem('emitentes_autorizados', JSON.stringify(emitentesPermitidos));
+        }
+
+        const data = new Date();
+        const mesAno = `${data.getFullYear()}${String(data.getMonth()+1).padStart(2,'0')}`;
+        const sequencia = contas.filter(c => c.emitente === emitente).length + 1;
+        const codigo = `${tipo.substring(0,3).toUpperCase()}-${emitente.substring(0,3).toUpperCase()}-${mesAno}-${String(sequencia).padStart(3,'0')}`;
+
+        contas.push({
+            id: Date.now(),
+            nome: `${tipo === 'boleto' ? 'Boleto' : 'Nota Fiscal'} - ${emitente}`,
+            emitente: emitente,
+            tipo: tipo,
+            valor: Number(valor),
+            vencimento: converterISO(vencimento),
+            codigo: codigo,
+            numeroDoc: numeroDoc,
+            origem: 'automatica',
+            paga: false,
+            dataRecebimento: new Date().toISOString()
+        });
+
+        document.getElementById('avisoEmitente').textContent = emitente;
+        document.getElementById('avisoTipo').textContent = tipo === 'boleto' ? 'Boleto Bancário' : 'Nota Fiscal';
+        document.getElementById('avisoValor').textContent = `R$ ${formatarMoeda(valor)}`;
+        document.getElementById('avisoVenc').textContent = vencimento;
+        document.getElementById('avisoCodigo').textContent = codigo;
+        document.getElementById('avisoNovoLancamento').classList.add('mostrar');
+        setTimeout(() => document.getElementById('avisoNovoLancamento').classList.remove('mostrar'), 12000);
+
+        salvarDados();
+    }
+
+    function abrirFormManual() {
+        document.getElementById('formManual').classList.add('aberto');
+    }
+    function fecharFormManual() {
+        document.getElementById('formManual').classList.remove('aberto');
+        ['nomeManual','valorManual','vencManual','codigoBoleto'].forEach(id=>document.getElementById(id).value='');
+    }
+    function salvarLancamentoManual() {
+        const nome = document.getElementById('nomeManual').value.trim();
+        const valor = parseFloat(document.getElementById('valorManual').value || 0);
+        const vencBR = document.getElementById('vencManual').value.trim();
+        const vencISO = converterISO(vencBR);
+        const recorrencia = document.getElementById('recorrenciaManual').value;
+        const codigo = document.getElementById('codigoBoleto').value.trim();
+
+        if (!nome || !valor || !vencISO) return alert('Preencha os dados obrigatórios!');
+
+        contas.push({
+            id: Date.now(),
+            nome: nome,
+            emitente: nome,
+            valor: valor,
+            vencimento: vencISO,
+            recorrencia: recorrencia,
+            codigoBarras: codigo,
+            origem: 'manual',
+            paga: false
+        });
+
+        fecharFormManual();
+        salvarDados();
+        alert('✅ Conta cadastrada com sucesso!');
+    }
+
+    function salvarDados() {
+        localStorage.setItem('contas_some_ao_pagar', JSON.stringify(contas));
+        renderizarContas();
+        atualizarResumo();
+    }
+
+    function renderizarContas() {
+        const lista = document.getElementById('listaContas');
+        lista.innerHTML = '';
+        const hoje = hojeData();
+        contas.filter(c => !c.paga).sort((a,b) => {
+            const vencA = new Date(a.vencimento + 'T00:00:00');
+            const vencB = new Date(b.vencimento + 'T00:00:00');
+            const diffA = Math.ceil((vencA - hoje) / (1000 * 60 * 60 * 24));
+            const diffB = Math.ceil((vencB - hoje) / (1000 * 60 * 60 * 24));
+            
+            if (diffA < 0 && diffB >= 0) return -1;
+            if (diffB < 0 && diffA >= 0) return 1;
+            if (diffA === 1 && diffB !== 1) return -1;
+            if (diffB === 1 && diffA !== 1) return 1;
+            return vencA - vencB;
+        }).forEach(c => {
+            const vencBR = c.vencimento.split('-').reverse().join('/');
+            const dataVenc = new Date(c.vencimento + 'T00:00:00');
+            const diff = Math.ceil((dataVenc - hoje) / (1000 * 60 * 60 * 24));
+            const classe = diff < 0 ? 'atrasado' : 'vencer';
+            lista.innerHTML += `
+            <div class="item-conta ${classe}">
+                <strong>${c.nome}</strong>
+                ${c.origem === 'automatica' ? '<span class="tag-automatico">📩 Recebido automaticamente</span>' : ''}
+                <div style="margin:0.4rem 0;">Valor: R$ ${formatarMoeda(c.valor)} | Venc.: ${vencBR}</div>
+                ${c.codigoBarras ? `<div style="font-size:0.8rem; color:#666; margin-top:0.2rem;">Código: ${c.codigoBarras.substring(0,30)}...</div>` : ''}
+                <div class="acoes-conta">
+                    <button class="btn sucesso pequeno" onclick="marcarPaga(${c.id})">✅ Pagar</button>
+                    <button class="btn perigo pequeno" onclick="excluirConta(${c.id})">🗑️ Excluir</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function marcarPaga(id) {
+        const c = contas.find(x => x.id === id);
+        if (!c) return;
+        c.paga = true;
+        c.dataPagamento = new Date().toISOString().split('T')[0];
+        
+        if(c.recorrencia && c.recorrencia !== 'unica'){
+            const prox = new Date(c.vencimento + 'T00:00:00');
+            c.recorrencia === 'mensal' ? prox.setMonth(prox.getMonth() + 1) : prox.setFullYear(prox.getFullYear() + 1);
+            contas.push({
+                id: Date.now(),
+                nome: c.nome,
+                emitente: c.emitente,
+                valor: c.valor,
+                vencimento: prox.toISOString().split('T')[0],
+                recorrencia: c.recorrencia,
+                origem: 'manual',
+                paga: false
+            });
+            alert('✅ Conta paga! Próxima foi gerada automaticamente.');
+        } else {
+            alert('✅ Conta paga! Valor removido das despesas.');
+        }
+        
+        salvarDados();
+    }
+
+    function excluirConta(id) {
+        if (confirm('Tem certeza que deseja excluir?')) {
+            contas = contas.filter(x => x.id !== id);
+            salvarDados();
+        }
+    }
+
+    function atualizarResumo() {
+        let ven = 0, atr = 0, pag = 0;
         const hoje = hojeData();
         contas.forEach(c => {
-            if (!c.paga) {
+            if (c.paga) {
+                pag += c.valor;
+            } else {
                 const venc = new Date(c.vencimento + 'T00:00:00');
                 const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
-                if (diff < 0 || diff === 1) {
-                    d += Number(c.valor) || 0;
-                }
+                if (diff < 0) atr += c.valor;
+                else ven += c.valor;
             }
         });
-
-        const saldo = v - d;
-        document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
-        document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
-        document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
-        
-        const elSaldo = document.getElementById('saldo');
-        elSaldo.style.color = saldo < 0 ? '#ffcdd2' : 'white';
+        document.getElementById('resumoVencer').textContent = `R$ ${formatarMoeda(ven)}`;
+        document.getElementById('resumoAtrasado').textContent = `R$ ${formatarMoeda(atr)}`;
+        document.getElementById('resumoPago').textContent = `R$ ${formatarMoeda(pag)}`;
     }
 
-    function limparCampos() {
-        document.querySelectorAll('input[name="tipoLancamento"]').forEach(r => r.checked = false);
-        document.getElementById('item').innerHTML = '<option value="">Selecione primeiro o tipo</option>';
-        document.getElementById('valor').value = '';
-        document.getElementById('pagamento').value = '';
-        document.getElementById('obs').value = '';
-        document.getElementById('data').value = dataHoje();
+    window.simularRecebimento = function() {
+        receberLancamento("Sadia", "boleto", 149.90, "10/08/2026", "BOL-78945/2026");
     }
 
-    function alternarMenuGerenciar() { document.getElementById('menuGerenciar').classList.toggle('aberto'); atualizarListasMenu(); }
-    function atualizarListasMenu() {
-        const lv = document.getElementById('listaVenda'), ld = document.getElementById('listaDespesa');
-        lv.innerHTML = ''; itensVenda.forEach((n,i)=>lv.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="v-${i}"><button class="btn-acao excluir" onclick="remover('venda',${i})">X</button></div>`);
-        ld.innerHTML = ''; itensDespesa.forEach((n,i)=>ld.innerHTML += `<div class="item-linha"><input type="text" value="${n}" id="d-${i}"><button class="btn-acao excluir" onclick="remover('despesa',${i})">X</button></div>`);
-    }
-    function remover(t,i){t==='venda'?itensVenda.splice(i,1):itensDespesa.splice(i,1);atualizarListasMenu();}
-    function adicionarNovoItem(t){t==='venda'?itensVenda.push(''):itensDespesa.push('');atualizarListasMenu();}
-    function salvarItensMenu() {
-        itensVenda = itensVenda.map((_,i)=>document.getElementById(`v-${i}`).value.trim()).filter(n=>n);
-        itensDespesa = itensDespesa.map((_,i)=>document.getElementById(`d-${i}`).value.trim()).filter(n=>n);
-        atualizarSelectPorTipo();
-        document.getElementById('menuGerenciar').classList.remove('aberto');
-        alert('Itens salvos com sucesso!');
-    }
-    
-    function abrirPastaUltimosSalvos(){window.location.href = 'salvos.html';}
-
-    function salvarNaPastaInterna() {
-        if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
-        let totalV = 0, totalD = 0;
-        lancamentos.forEach(l => l.tipo==='venda' ? totalV += l.valor : totalD += l.valor);
-        pastaUltimosSalvos.unshift({
-            dataHora: new Date().toLocaleString('pt-BR'),
-            lancamentos: JSON.parse(JSON.stringify(lancamentos)),
-            totalGeral: totalV - totalD
-        });
-        if(pastaUltimosSalvos.length > 20) pastaUltimosSalvos.pop();
-        localStorage.setItem('financoPastaSalvos', JSON.stringify(pastaUltimosSalvos));
-        alert('✅ Salvo localmente!');
-    }
-
-    function verificarBotaoContinuar() {
-        const area = document.getElementById('areaContinuar');
-        lancamentos.length >= 1 ? area.classList.add('mostrar') : area.classList.remove('mostrar');
-    }
-
-    function irParaPaginaExportar() {
-        document.getElementById('paginaPrincipal').classList.remove('ativa');
-        document.getElementById('paginaExportar').classList.add('ativa');
-        atualizarPaginaExportar();
-        window.scrollTo(0,0);
-    }
-    function irParaPaginaIntegracao() {window.location.href = 'integracao.html';}
-    function voltarParaPrincipal() {
-        document.getElementById('paginaExportar').classList.remove('ativa');
-        document.getElementById('paginaPrincipal').classList.add('ativa');
-        atualizarTabela(); atualizarSoma(); verificarBotaoContinuar();
-        window.scrollTo(0,0);
-    }
-
-    function atualizarPaginaExportar() {
-        const tab = document.getElementById('tabelaExportar');
-        tab.innerHTML = '';
-        lancamentos.forEach((l, i) => {
-            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.',',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
-        });
-        let v=0, d=0;
-        lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
-        document.getElementById('expTotalVendas').textContent = `R$ ${v.toFixed(2).replace('.',',')}`;
-        document.getElementById('expTotalDespesas').textContent = `R$ ${d.toFixed(2).replace('.',',')}`;
-        document.getElementById('expSaldo').textContent = `R$ ${(v-d).toFixed(2).replace('.',',')}`;
-    }
-
-    function abrirEdicao(indice) {
-        indiceEdicaoAtual = indice;
-        const l = lancamentos[indice];
-        document.getElementById('edtVenda').checked = l.tipo === 'venda';
-        document.getElementById('edtDespesa').checked = l.tipo === 'despesa';
-        document.getElementById('edtData').value = l.data;
-        const selItem = document.getElementById('edtItem');
-        selItem.innerHTML = '<option value="">Selecione</option>';
-        l.tipo === 'venda' ? itensVenda.forEach(n=>selItem.appendChild(new Option(n,n))) : itensDespesa.forEach(n=>selItem.appendChild(new Option(n,n)));
-        selItem.value = l.item;
-        document.getElementById('edtValor').value = l.valor;
-        document.getElementById('edtPagamento').value = l.pag;
-        document.getElementById('edtObs').value = l.obs;
-        document.getElementById('modalEditar').classList.add('aberto');
-    }
-
-    function fecharModal() {
-        document.getElementById('modalEditar').classList.remove('aberto');
-        indiceEdicaoAtual = null;
-    }
-
-    function salvarEdicao() {
-        const ind = indiceEdicaoAtual;
-        if(ind === null) return;
-        const ehVenda = document.getElementById('edtVenda').checked;
-        const ehDespesa = document.getElementById('edtDespesa').checked;
-        const data = document.getElementById('edtData').value.trim();
-        const item = document.getElementById('edtItem').value.trim();
-        const valor = parseFloat(document.getElementById('edtValor').value || 0);
-        const pag = document.getElementById('edtPagamento').value.trim();
-        const obs = document.getElementById('edtObs').value.trim() || '-';
-
-        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return alert('Preencha todos os campos corretamente!');
-
-        lancamentos[ind] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
-        fecharModal();
-        atualizarTabela();
-        atualizarSoma();
-        atualizarPaginaExportar();
-    }
-
-    function excluirLancamento(indice) {
-        if(confirm('Tem certeza que deseja excluir esse lançamento?')) {
-            lancamentos.splice(indice, 1);
-            atualizarTabela();
-            atualizarSoma();
-            atualizarPaginaExportar();
-            verificarBotaoContinuar();
-        }
-    }
-
-    // === FUNÇÕES DE AVISOS EM POP-UP ===
-    function formatarDataBrasil(dataStr) {
-        const [ano, mes, dia] = dataStr.split('-');
-        return `${dia}/${mes}/${ano}`;
-    }
-
-    function carregarAvisos() {
-        listaAvisos = [];
-        indiceAvisoAtual = 0;
-        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
-        const hoje = hojeData();
-
-        contas.forEach(conta => {
-            if (conta.paga) return;
-            const dataVenc = new Date(conta.vencimento + 'T00:00:00');
-            const diasDiferenca = Math.ceil((dataVenc - hoje) / (1000 * 60 * 60 * 24));
-
-            if (diasDiferenca < 0) {
-                listaAvisos.push({
-                    tipo: 'atraso',
-                    titulo: '🔴 CONTA ATRASADA!',
-                    texto: `A conta ${conta.nome} está ATRASADA há ${Math.abs(diasDiferenca)} dia(s)!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nRegularize o quanto antes!`
-                });
-            }
-            else if (diasDiferenca === 1) {
-                listaAvisos.push({
-                    tipo: 'amanha',
-                    titulo: '⚠️ CONTA VENCENDO AMANHÃ',
-                    texto: `A conta ${conta.nome} vence AMANHÃ!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nEvite juros e multas!`
-                });
-            }
-        });
-
-        if (listaAvisos.length > 0) {
-            mostrarProximoAviso();
-        }
-    }
-
-    function mostrarProximoAviso() {
-        if (indiceAvisoAtual >= listaAvisos.length) {
-            fecharPopupAviso();
-            return;
-        }
-
-        const aviso = listaAvisos[indiceAvisoAtual];
-        const popup = document.getElementById('popupAvisoGeral');
-        const caixa = document.getElementById('caixaPopupAtual');
-        
-        caixa.classList.remove('atraso', 'amanha');
-        caixa.classList.add(aviso.tipo);
-
-        document.getElementById('tituloPopup').textContent = aviso.titulo;
-        document.getElementById('textoPopup').textContent = aviso.texto;
-        document.getElementById('btnAcaoPopup').textContent = 'OK';
-
-        document.getElementById('btnAcaoPopup').onclick = () => {
-            indiceAvisoAtual++;
-            mostrarProximoAviso();
-        };
-
-        const btnProx = document.getElementById('btnProximoPopup');
-        if (listaAvisos.length > 1 && indiceAvisoAtual < listaAvisos.length - 1) {
-            btnProx.style.display = 'block';
-            btnProx.onclick = () => {
-                indiceAvisoAtual++;
-                mostrarProximoAviso();
-            };
-        } else {
-            btnProx.style.display = 'none';
-        }
-
-        popup.classList.add('aberto');
-    }
-
-    function fecharPopupAviso() {
-        document.getElementById('popupAvisoGeral').classList.remove('aberto');
-    }
-
-    function salvarNoSupabase() {
-        if(!supabase) return alert('Integração com nuvem não disponível!');
-        if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
-        
-        const dados = {
-            data: new Date().toISOString(),
-            lancamentos: lancamentos,
-            totais: {
-                vendas: lancamentos.reduce((s,l)=>l.tipo==='venda'?s+l.valor:s,0),
-                despesas: lancamentos.reduce((s,l)=>l.tipo==='despesa'?s+l.valor:s,0)
-            }
-        };
-
-        supabase.from(TABELA_SUPABASE).insert([dados])
-            .then(() => alert('✅ Salvo na nuvem com sucesso!'))
-            .catch(e => alert('❌ Erro ao salvar: ' + e.message));
-    }
+    window.onload = () => {
+        contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        renderizarContas();
+        atualizarResumo();
+    };
 </script>
 
-</div>
 </body>
 </html>
+
+  
+
+
 
 
 
