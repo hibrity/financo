@@ -127,6 +127,8 @@
         .caixa-popup.amanha { border-color:#f57c00; }
         .caixa-popup.amanha h3 { color:#e65100; }
         .caixa-popup.amanha .btn-ok { background:#f57c00; }
+
+        .aviso-topo { margin-bottom: 1rem; min-height: 0; }
     </style>
 </head>
 <body>
@@ -180,6 +182,7 @@
         <button class="btn-sair" onclick="sair()">🚪 Sair</button>
     </div>
 
+    <!-- ÁREA DE AVISOS TOTALMENTE LIMPA - NADA APARECE AQUI -->
     <div class="aviso-topo" id="caixaAvisos"></div>
 
     <div class="barra-botoes">
@@ -319,7 +322,7 @@
     </div>
 </div>
 
-<!-- POP-UP ÚNICO PARA TODOS OS AVISOS -->
+<!-- POP-UP ÚNICO PARA TODOS OS AVISOS - SÓ APARECE QUANDO TEM ALGO PARA AVISAR -->
 <div class="fundo-popup" id="popupAvisoGeral">
     <div class="caixa-popup" id="caixaPopupAtual">
         <h3 id="tituloPopup"></h3>
@@ -403,6 +406,7 @@
         let v = 0, d = 0;
         lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
         
+        // Soma contas não pagas que estão atrasadas ou vencendo amanhã no card de despesas
         const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
         const hoje = hojeData();
         contas.forEach(c => {
@@ -510,13 +514,18 @@
         selItem.value = l.item;
         document.getElementById('edtValor').value = l.valor;
         document.getElementById('edtPagamento').value = l.pag;
-        document.getElementById('edtObs').value = l.obs === '-' ? '' : l.obs;
+        document.getElementById('edtObs').value = l.obs;
         document.getElementById('modalEditar').classList.add('aberto');
     }
 
-    function fecharModal() { document.getElementById('modalEditar').classList.remove('aberto'); indiceEdicaoAtual = null; }
+    function fecharModal() {
+        document.getElementById('modalEditar').classList.remove('aberto');
+        indiceEdicaoAtual = null;
+    }
 
     function salvarEdicao() {
+        const ind = indiceEdicaoAtual;
+        if(ind === null) return;
         const ehVenda = document.getElementById('edtVenda').checked;
         const ehDespesa = document.getElementById('edtDespesa').checked;
         const data = document.getElementById('edtData').value.trim();
@@ -524,84 +533,69 @@
         const valor = parseFloat(document.getElementById('edtValor').value || 0);
         const pag = document.getElementById('edtPagamento').value.trim();
         const obs = document.getElementById('edtObs').value.trim() || '-';
-        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) { alert('Preencha tudo corretamente!'); return; }
-        lancamentos[indiceEdicaoAtual] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
-        fecharModal(); atualizarTabela(); atualizarSoma(); atualizarPaginaExportar();
-        alert('✅ Atualizado!');
+
+        if(!data || (!ehVenda && !ehDespesa) || !item || valor <= 0 || !pag) return alert('Preencha todos os campos corretamente!');
+
+        lancamentos[ind] = {data, tipo: ehVenda ? 'venda' : 'despesa', item, valor, pag, obs};
+        fecharModal();
+        atualizarTabela();
+        atualizarSoma();
+        atualizarPaginaExportar();
     }
 
     function excluirLancamento(indice) {
-        if(confirm('Excluir esse lançamento?')) {
+        if(confirm('Tem certeza que deseja excluir esse lançamento?')) {
             lancamentos.splice(indice, 1);
-            atualizarTabela(); atualizarSoma(); atualizarPaginaExportar(); verificarBotaoContinuar();
+            atualizarTabela();
+            atualizarSoma();
+            atualizarPaginaExportar();
+            verificarBotaoContinuar();
         }
     }
 
-    async function salvarNoSupabase() {
-        if (!supabase) return alert('❌ Nuvem indisponível no momento');
-        if (lancamentos.length === 0) return alert('Nenhum dado para salvar!');
-
-        if (!confirm('⚠️ Isso substituirá todos os dados salvos na nuvem. Deseja continuar?')) return;
-
-        try {
-            const { error: erroDelete } = await supabase.from(TABELA_SUPABASE).delete().neq('id', 0);
-            if (erroDelete) throw erroDelete;
-
-            const dados = lancamentos.map(l => ({
-                data: l.data, tipo: l.tipo, item: l.item, valor: l.valor,
-                pagamento: l.pag, observacao: l.obs,
-                itens_venda: itensVenda, itens_despesa: itensDespesa
-            }));
-
-            const { error } = await supabase.from(TABELA_SUPABASE).insert(dados);
-            if (error) throw error;
-            alert('✅ Salvo na nuvem com sucesso!');
-        } catch (erro) {
-            console.error('Erro Supabase:', erro);
-            alert(`❌ Falha ao salvar: ${erro.message || 'Verifique sua conexão'}`);
-        }
-    }
-
-    // === FUNÇÕES DOS POP-UPS DE AVISOS ===
-    function formatarMoeda(v) { return Number(v||0).toFixed(2).replace('.',','); }
-    function formatarDataBR(d) { if(!d)return''; const [a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; }
-
-    function verificarStatusConta(conta) {
-        if (conta.paga) return null;
-        const venc = new Date(conta.vencimento + 'T00:00:00');
-        const hoje = hojeData();
-        const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
-        
-        if (diff < 0) return { tipo: 'atrasada', dias: Math.abs(diff) };
-        if (diff === 1) return { tipo: 'amanha' };
-        return null;
+    // === FUNÇÕES DE AVISOS EM POP-UP ===
+    function formatarDataBrasil(dataStr) {
+        const [ano, mes, dia] = dataStr.split('-');
+        return `${dia}/${mes}/${ano}`;
     }
 
     function carregarAvisos() {
-        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
         listaAvisos = [];
         indiceAvisoAtual = 0;
+        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        const hoje = hojeData();
 
-        contas.forEach(c => {
-            const status = verificarStatusConta(c);
-            if (status) listaAvisos.push({ ...c, status });
+        contas.forEach(conta => {
+            if (conta.paga) return;
+            const dataVenc = new Date(conta.vencimento + 'T00:00:00');
+            const diasDiferenca = Math.ceil((dataVenc - hoje) / (1000 * 60 * 60 * 24));
+
+            // Conta atrasada
+            if (diasDiferenca < 0) {
+                listaAvisos.push({
+                    tipo: 'atraso',
+                    titulo: '🔴 CONTA ATRASADA!',
+                    texto: `A conta ${conta.nome} está ATRASADA há ${Math.abs(diasDiferenca)} dia(s)!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nRegularize o quanto antes!`,
+                    botao: 'Vou Pagar',
+                    idConta: conta.id
+                });
+            }
+            // Vence amanhã
+            else if (diasDiferenca === 1) {
+                listaAvisos.push({
+                    tipo: 'amanha',
+                    titulo: '⚠️ CONTA VENCENDO AMANHÃ',
+                    texto: `A conta ${conta.nome} vence AMANHÃ!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nEvite juros e multas!`,
+                    botao: 'Já Vou Pagar',
+                    idConta: conta.id
+                });
+            }
         });
 
-        listaAvisos.sort((a,b) => {
-            if (a.status.tipo !== b.status.tipo) return a.status.tipo === 'atrasada' ? -1 : 1;
-            if (a.status.tipo === 'atrasada') return b.status.dias - a.status.dias;
-            return new Date(a.vencimento) - new Date(b.vencimento);
-        });
-
-        const caixa = document.getElementById('caixaAvisos');
-        if (listaAvisos.length === 0) {
-            caixa.innerHTML = `<p style="color:#2e7d32; text-align:center; padding:1rem;">✅ Nenhuma conta atrasada ou vencendo amanhã!</p>`;
-        } else {
-            caixa.innerHTML = `<p style="color:#f57c00; text-align:center; padding:1rem;">⚠️ Você tem ${listaAvisos.length} aviso(s) de contas!</p>`;
-            setTimeout(() => mostrarProximoAviso(), 500);
+        // NENHUM AVISO FIXO NA TELA - SÓ ABRE POP-UP SE TIVER AVISOS
+        if (listaAvisos.length > 0) {
+            mostrarProximoAviso();
         }
-
-        atualizarSoma();
     }
 
     function mostrarProximoAviso() {
@@ -611,48 +605,65 @@
         }
 
         const aviso = listaAvisos[indiceAvisoAtual];
-        const popupFundo = document.getElementById('popupAvisoGeral');
+        const popup = document.getElementById('popupAvisoGeral');
         const caixa = document.getElementById('caixaPopupAtual');
-        const titulo = document.getElementById('tituloPopup');
-        const texto = document.getElementById('textoPopup');
-        const btnOk = document.getElementById('btnAcaoPopup');
-        const btnProx = document.getElementById('btnProximoPopup');
-
+        
+        // Reseta estilos
         caixa.classList.remove('atraso', 'amanha');
+        caixa.classList.add(aviso.tipo);
 
-        if (aviso.status.tipo === 'atrasada') {
-            caixa.classList.add('atraso');
-            titulo.textContent = '🔴 CONTA ATRASADA!';
-            texto.innerHTML = `A conta <strong>${aviso.nome}</strong> está ATRASADA há <strong>${aviso.status.dias} dia(s)</strong>!<br><br>Valor: <strong>R$ ${formatarMoeda(aviso.valor)}</strong><br>Vencimento: ${formatarDataBR(aviso.vencimento)}<br><strong>Regularize o quanto antes!</strong>`;
-            btnOk.textContent = 'Vou Pagar';
-            btnOk.onclick = () => {
-                indiceAvisoAtual++;
-                mostrarProximoAviso();
-            };
-        } else {
-            caixa.classList.add('amanha');
-            titulo.textContent = '⚠️ AVISO DE VENCIMENTO';
-            texto.innerHTML = `A conta <strong>${aviso.nome}</strong> vence amanhã!<br><br>Valor: <strong>R$ ${formatarMoeda(aviso.valor)}</strong><br>Vencimento: ${formatarDataBR(aviso.vencimento)}<br><strong>Evite juros e multas!</strong>`;
-            btnOk.textContent = 'Entendido';
-            btnOk.onclick = () => {
-                indiceAvisoAtual++;
-                mostrarProximoAviso();
-            };
-        }
+        document.getElementById('tituloPopup').textContent = aviso.titulo;
+        document.getElementById('textoPopup').textContent = aviso.texto;
+        document.getElementById('btnAcaoPopup').textContent = aviso.botao;
 
-        btnProx.style.display = (indiceAvisoAtual + 1 < listaAvisos.length) ? 'block' : 'none';
-        btnProx.onclick = () => {
+        // Ação do botão principal
+        document.getElementById('btnAcaoPopup').onclick = () => {
+            if (aviso.idConta) {
+                window.location.href = 'contas.html';
+            }
             indiceAvisoAtual++;
             mostrarProximoAviso();
         };
 
-        popupFundo.classList.add('aberto');
+        // Mostra botão de próximo se tiver mais avisos
+        const btnProx = document.getElementById('btnProximoPopup');
+        if (listaAvisos.length > 1 && indiceAvisoAtual < listaAvisos.length - 1) {
+            btnProx.style.display = 'block';
+            btnProx.onclick = () => {
+                indiceAvisoAtual++;
+                mostrarProximoAviso();
+            };
+        } else {
+            btnProx.style.display = 'none';
+        }
+
+        popup.classList.add('aberto');
     }
 
     function fecharPopupAviso() {
         document.getElementById('popupAvisoGeral').classList.remove('aberto');
     }
+
+    // Funções de salvamento no Supabase e locais
+    function salvarNoSupabase() {
+        if(!supabase) return alert('Integração com nuvem não disponível!');
+        if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
+        
+        const dados = {
+            data: new Date().toISOString(),
+            lancamentos: lancamentos,
+            totais: {
+                vendas: lancamentos.reduce((s,l)=>l.tipo==='venda'?s+l.valor:s,0),
+                despesas: lancamentos.reduce((s,l)=>l.tipo==='despesa'?s+l.valor:s,0)
+            }
+        };
+
+        supabase.from(TABELA_SUPABASE).insert([dados])
+            .then(() => alert('✅ Salvo na nuvem com sucesso!'))
+            .catch(e => alert('❌ Erro ao salvar: ' + e.message));
+    }
 </script>
+
 </div>
 </body>
 </html>
