@@ -8,68 +8,67 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background-color: #f5f7fa; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .pagina { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; margin-bottom: 15px; font-size: 22px; }
-        .dica { font-size: 14px; color: #666; text-align: center; margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; }
-        .aviso { padding: 10px; border-radius: 6px; margin: 8px 0; font-size: 14px; display: none; }
+        body { background-color: #f5f7fa; padding: 15px; max-width: 600px; margin: 0 auto; }
+        .pagina { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 12px; font-size: 20px; }
+        .dica { font-size: 13px; color: #666; text-align: center; margin-bottom: 12px; padding: 8px; background: #e3f2fd; border-radius: 6px; }
+        .aviso { padding: 10px; border-radius: 6px; margin: 6px 0; font-size: 14px; display: none; }
         .aviso.sucesso { background: #e8f5e9; color: #2e7d32; }
         .aviso.alerta { background: #fff3cd; color: #856404; }
         .aviso.erro { background: #ffebee; color: #c62828; }
+        .aviso.carregando { background: #e3f2fd; color: #1565c0; }
         .aviso.mostrar { display: block; }
 
-        .grupo-botoes { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
-        .btn { flex: 1; min-width: 130px; padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .grupo-botoes { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+        .btn { flex: 1; min-width: 110px; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn.barras { background: #9b59b6; color: white; }
         .btn.qr { background: #3498db; color: white; }
         .btn.texto { background: #16a085; color: white; }
         .btn.sucesso { background: #27ae60; color: white; }
         .btn.perigo { background: #e74c3c; color: white; }
         .btn.padrao { background: #6c757d; color: white; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* ÁREAS DE CÂMERA DIFERENCIADAS */
-        .area-camera { background: #000; border-radius: 8px; margin: 15px auto; overflow: hidden; display: none; position: relative; }
-        .area-camera.ativa { display: block; }
+        /* ÁREAS DE CÂMERA */
+        .area-camera { background: #000; border-radius: 8px; margin: 12px auto; overflow: hidden; display: none; position: relative; }
+        .area-camera.ativa { display: block; min-height: 200px; }
 
-        /* Código de Barras: largo e baixo */
-        .area-camera.barras { width: 96%; height: 170px; border: 4px solid #9b59b6; }
-        .area-camera.barras .moldura { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: 55px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 3px; pointer-events: none; }
+        .area-camera.barras { width: 96%; height: 160px; border: 3px solid #9b59b6; }
+        .area-camera.barras .moldura { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: 50px; border: 2px dashed rgba(255,255,255,0.5); pointer-events: none; }
 
-        /* QR Code: quadrado */
-        .area-camera.qr { width: 320px; height: 320px; border: 4px solid #3498db; }
-        .area-camera.qr .moldura { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 210px; height: 210px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 3px; pointer-events: none; }
+        .area-camera.qr { width: 300px; height: 300px; border: 3px solid #3498db; }
+        .area-camera.qr .moldura { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 2px dashed rgba(255,255,255,0.5); pointer-events: none; }
 
-        /* Texto: tela cheia */
-        .area-camera.texto { width: 100%; height: 370px; border: none; }
+        .area-camera.texto { width: 100%; height: 360px; border: none; }
         .area-camera.texto .moldura { display: none; }
 
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #leitor-container { width: 100%; height: 100%; }
-        #leitor-container video { transform: scaleX(-1) !important; }
-        #leitor-container__dashboard { display: none !important; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); background: #111; }
+        #leitor-container { width: 100%; height: 100%; background: #111; }
+        #leitor-container__dashboard, #qr-reader__dashboard { display: none !important; }
 
-        .btn-capturar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 70px; height: 70px; border-radius: 50%; background: white; border: 4px solid #16a085; font-size: 30px; cursor: pointer; z-index: 20; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+        .btn-capturar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 65px; height: 65px; border-radius: 50%; background: white; border: 4px solid #16a085; font-size: 28px; cursor: pointer; z-index: 10; display: none; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
         .btn-capturar.mostrar { display: flex; align-items: center; justify-content: center; }
+        .btn-capturar:disabled { opacity: 0.6; }
 
-        .dados-lidos { margin-top: 20px; display: none; }
+        .dados-lidos { margin-top: 15px; display: none; }
         .dados-lidos.mostrar { display: block; }
-        .campo { margin: 12px 0; }
-        .campo label { display: block; font-weight: bold; color: #34495e; margin-bottom: 5px; font-size: 15px; }
-        .campo input, .campo textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        .campo textarea { resize: vertical; min-height: 70px; }
+        .campo { margin: 10px 0; }
+        .campo label { display: block; font-weight: bold; color: #34495e; margin-bottom: 4px; font-size: 14px; }
+        .campo input, .campo textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; }
+        .campo textarea { resize: vertical; min-height: 60px; }
     </style>
 </head>
 <body>
     <div class="pagina">
         <h1>📷 Leitor - Financo</h1>
-        <div class="dica">💡 Permita a câmera quando pedir — cada função abre com seu formato</div>
+        <div class="dica">💡 Permita a câmera → A câmera vai acender → Aperte 📸 para capturar</div>
         <div class="aviso sucesso" id="avisoSucesso">✅ Lido com sucesso!</div>
         <div class="aviso alerta" id="avisoAlerta">⚠️ Não é código de pagamento!</div>
-        <div class="aviso erro" id="avisoErro">❌ Não foi possível acessar a câmera — verifique permissões</div>
+        <div class="aviso erro" id="avisoErro">❌ Não foi possível acessar a câmera. Verifique permissões e tente novamente.</div>
+        <div class="aviso carregando" id="avisoCarregando">🔍 Lendo... aguarde um instante</div>
 
         <div class="grupo-botoes">
-            <button class="btn barras" id="btnBarras">📟 Código de Barras</button>
+            <button class="btn barras" id="btnBarras">📟 Código Barras</button>
             <button class="btn qr" id="btnQR">📲 QR Code</button>
             <button class="btn texto" id="btnTexto">📸 Ler Texto</button>
         </div>
@@ -77,7 +76,7 @@
         <div class="area-camera" id="areaCamera">
             <div class="moldura"></div>
             <div id="leitor-container"></div>
-            <video id="video-nativo" playsinline muted></video>
+            <video id="videoTexto" playsinline muted autoplay></video>
             <button class="btn-capturar" id="btnCapturar">📸</button>
         </div>
 
@@ -92,7 +91,7 @@
                 <input type="text" id="campoValor">
             </div>
             <div class="campo">
-                <label>Conteúdo Lido:</label>
+                <label>Conteúdo:</label>
                 <textarea id="campoCodigo" readonly></textarea>
             </div>
             <div class="campo">
@@ -117,12 +116,13 @@
         const btnTexto = document.getElementById('btnTexto');
         const areaCamera = document.getElementById('areaCamera');
         const leitorContainer = document.getElementById('leitor-container');
-        const videoNativo = document.getElementById('video-nativo');
+        const videoTexto = document.getElementById('videoTexto');
         const btnCapturar = document.getElementById('btnCapturar');
         const dadosLidos = document.getElementById('dadosLidos');
         const avisoSucesso = document.getElementById('avisoSucesso');
         const avisoAlerta = document.getElementById('avisoAlerta');
         const avisoErro = document.getElementById('avisoErro');
+        const avisoCarregando = document.getElementById('avisoCarregando');
         const campoNome = document.getElementById('campoNome');
         const campoValor = document.getElementById('campoValor');
         const campoCodigo = document.getElementById('campoCodigo');
@@ -132,24 +132,22 @@
         const btnVoltar = document.getElementById('btnVoltar');
         const btnEnviar = document.getElementById('btnEnviar');
 
-        let leitor = null;
+        let leitorAtivo = null;
         let streamAtual = null;
         let tipoLancamento = null;
 
-        // Verifica se é código de pagamento
         function ehPagamento(texto) {
             if (!texto || texto.length < 20) return false;
             const n = texto.replace(/\D/g, '');
             return [44,46,47,48].includes(n.length) || texto.includes('00020126') || texto.includes('pix');
         }
 
-        // Para tudo e limpa
         function pararTudo() {
-            if (leitor) { leitor.stop().catch(()=>{}); leitor = null; }
+            if (leitorAtivo) { try { leitorAtivo.stop(); } catch(e){} leitorAtivo = null; }
             if (streamAtual) { streamAtual.getTracks().forEach(t => t.stop()); streamAtual = null; }
             leitorContainer.innerHTML = '';
-            videoNativo.srcObject = null;
-            videoNativo.style.display = 'none';
+            videoTexto.srcObject = null;
+            videoTexto.style.display = 'none';
             btnCapturar.classList.remove('mostrar');
         }
 
@@ -160,6 +158,7 @@
             avisoSucesso.classList.remove('mostrar');
             avisoAlerta.classList.remove('mostrar');
             avisoErro.classList.remove('mostrar');
+            avisoCarregando.classList.remove('mostrar');
             campoNome.value = '';
             campoValor.value = '';
             campoCodigo.value = '';
@@ -171,108 +170,92 @@
         btnBarras.addEventListener('click', async () => {
             limparTela();
             areaCamera.classList.add('ativa', 'barras');
-            leitorContainer.innerHTML = '';
-
             try {
-                leitor = new Html5Qrcode("leitor-container");
-                await leitor.start(
+                leitorAtivo = new Html5Qrcode("leitor-container");
+                await leitorAtivo.start(
                     { facingMode: "environment" },
                     { fps: 10, qrbox: {width: 300, height: 50} },
                     (conteudo) => {
-                        leitor.stop();
+                        leitorAtivo.stop();
                         campoCodigo.value = `Código de Barras: ${conteudo}`;
                         const nums = conteudo.replace(/\D/g, '');
                         if (nums.length >= 8) campoDigitos.value = nums.slice(-8);
-                        
                         if (ehPagamento(conteudo)) {
                             avisoSucesso.classList.add('mostrar');
                             campoNome.value = 'Pagamento via Código de Barras';
                             dadosLidos.classList.add('mostrar');
-                        } else {
-                            avisoAlerta.classList.add('mostrar');
-                        }
-                    },
-                    () => {}
+                        } else avisoAlerta.classList.add('mostrar');
+                    }, () => {}
                 );
-            } catch (e) {
-                avisoErro.classList.add('mostrar');
-                console.error(e);
-            }
+            } catch { avisoErro.classList.add('mostrar'); }
         });
 
         // 2. QR CODE
         btnQR.addEventListener('click', async () => {
             limparTela();
             areaCamera.classList.add('ativa', 'qr');
-            leitorContainer.innerHTML = '';
-
             try {
-                leitor = new Html5Qrcode("leitor-container");
-                await leitor.start(
+                leitorAtivo = new Html5Qrcode("leitor-container");
+                await leitorAtivo.start(
                     { facingMode: "environment" },
                     { fps: 12, qrbox: 220, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] },
                     (conteudo) => {
-                        leitor.stop();
+                        leitorAtivo.stop();
                         campoCodigo.value = `QR Code: ${conteudo}`;
                         const nums = conteudo.replace(/\D/g, '');
                         if (nums.length >= 8) campoDigitos.value = nums.slice(-8);
-                        
                         if (ehPagamento(conteudo)) {
                             avisoSucesso.classList.add('mostrar');
                             campoNome.value = 'Pagamento via QR Code';
                             dadosLidos.classList.add('mostrar');
-                        } else {
-                            avisoAlerta.classList.add('mostrar');
-                        }
-                    },
-                    () => {}
+                        } else avisoAlerta.classList.add('mostrar');
+                    }, () => {}
                 );
-            } catch (e) {
-                avisoErro.classList.add('mostrar');
-                console.error(e);
-            }
+            } catch { avisoErro.classList.add('mostrar'); }
         });
 
-        // 3. LER TEXTO / FOTO
+        // 3. LEITURA DE TEXTO CORRIGIDA
         btnTexto.addEventListener('click', async () => {
             limparTela();
             areaCamera.classList.add('ativa', 'texto');
-            videoNativo.style.display = 'block';
+            videoTexto.style.display = 'block';
             btnCapturar.classList.add('mostrar');
 
             try {
                 streamAtual = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
+                    video: { facingMode: 'environment', width: 1280, height: 720 },
+                    audio: false
                 });
-                videoNativo.srcObject = streamAtual;
-            } catch (e) {
+                videoTexto.srcObject = streamAtual;
+                await videoTexto.play();
+                if (!videoTexto.videoWidth) throw new Error('Câmera não iniciou');
+            } catch (erro) {
+                console.error('Erro câmera:', erro);
                 avisoErro.classList.add('mostrar');
                 limparTela();
-                console.error(e);
             }
         });
 
-        // Capturar foto e ler texto
         btnCapturar.addEventListener('click', async () => {
-            if (!streamAtual) return;
+            if (!streamAtual || !videoTexto.videoWidth) return alert('Câmera não está ativa!');
             btnCapturar.disabled = true;
+            avisoCarregando.classList.add('mostrar');
 
             const canvas = document.createElement('canvas');
-            canvas.width = videoNativo.videoWidth;
-            canvas.height = videoNativo.videoHeight;
-            canvas.getContext('2d').drawImage(videoNativo, 0, 0);
-            const imgData = canvas.toDataURL('image/png');
+            canvas.width = videoTexto.videoWidth;
+            canvas.height = videoTexto.videoHeight;
+            canvas.getContext('2d').drawImage(videoTexto, 0, 0);
+            const img = canvas.toDataURL('image/png');
             
             pararTudo();
             areaCamera.classList.remove('ativa');
 
             try {
-                const res = await Tesseract.recognize(imgData, 'por', { logger: () => {} });
+                const res = await Tesseract.recognize(img, 'por', { logger: () => {} });
                 const texto = res.data.text;
-                const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 2);
                 campoCodigo.value = `Texto lido:\n${texto}`;
 
-                // Nome do emitente
                 const palavrasEmit = ['emitente', 'nome', 'razao social', 'fantasia', 'loja', 'empresa', 'estabelecimento'];
                 let nome = null;
                 for (let i = 0; i < linhas.length; i++) {
@@ -283,8 +266,7 @@
                 }
                 campoNome.value = nome || linhas.find(l => l.length>3 && l.length<60 && !l.match(/^\d/) && !l.includes('R$')) || 'Não identificado';
 
-                // Valor total
-                const palavrasVal = ['total', 'valor total', 'vl total', 'valor r$', 'vlr total'];
+                const palavrasVal = ['total', 'valor total', 'vl total', 'valor r$'];
                 let val = null;
                 for (const l of linhas) {
                     if (palavrasVal.some(p => l.toLowerCase().includes(p))) {
@@ -298,7 +280,6 @@
                 }
                 campoValor.value = val;
 
-                // Dígitos
                 const nums = texto.replace(/\D/g, '');
                 if (nums.length >= 8) campoDigitos.value = nums.slice(-8);
 
@@ -308,17 +289,16 @@
                 avisoErro.classList.add('mostrar');
             }
 
+            avisoCarregando.classList.remove('mostrar');
             btnCapturar.disabled = false;
         });
 
-        btnReceita.addEventListener('click', () => { tipoLancamento = 'Receita'; btnReceita.style.transform = 'scale(0.97)'; btnDespesa.style.transform = 'scale(1)'; });
-        btnDespesa.addEventListener('click', () => { tipoLancamento = 'Despesa'; btnDespesa.style.transform = 'scale(0.97)'; btnReceita.style.transform = 'scale(1)'; });
+        btnReceita.addEventListener('click', () => { tipoLancamento = 'Receita'; });
+        btnDespesa.addEventListener('click', () => { tipoLancamento = 'Despesa'; });
         btnVoltar.addEventListener('click', limparTela);
 
         btnEnviar.addEventListener('click', () => {
             if (!tipoLancamento) return alert('Escolha Receita ou Despesa!');
-            if (!campoValor.value && !ehPagamento(campoCodigo.value)) return alert('Informe valor ou código válido!');
-
             const valorNum = parseFloat(campoValor.value.replace(/[R$.\s]/g, '').replace(',', '.')) || 0;
             if (valorNum <= 0 && !ehPagamento(campoCodigo.value)) return alert('Valor inválido!');
 
@@ -336,8 +316,7 @@
             const lista = JSON.parse(localStorage.getItem('lancamentos_financo') || '[]');
             lista.push(lancamento);
             localStorage.setItem('lancamentos_financo', JSON.stringify(lista));
-
-            alert('✅ Enviado! Voltando...');
+            alert('✅ Enviado!');
             setTimeout(() => window.close(), 600);
         });
     </script>
