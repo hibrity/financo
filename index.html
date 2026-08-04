@@ -111,6 +111,22 @@
 
         @media (min-width: 992px) { .barra-botoes { flex-wrap: nowrap; } .barra-botoes > div, .barra-botoes > .btn { flex: 1; max-width: none; } }
         @media (max-width: 600px) { html { font-size: 15px; } body { margin: 0.75rem auto; } .cabecalho { flex-direction: column; align-items: flex-start; } .barra-botoes > div, .barra-botoes > .btn { flex: 1 1 calc(50% - 0.38rem); min-width: auto; max-width: none; font-size: 0.85rem; } .linha { gap: 0.75rem; } .campo { flex-basis: 100%; } .tipo { gap: 1rem; } .card { flex-basis: 100%; } .menu-gerenciar { left: 0; right: 0; } #data, #edtData { max-width: 100%; } .btn.pequeno { width: 100%; } }
+
+        /* === ESTILOS DOS POP-UPS DE AVISOS === */
+        .fundo-popup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; z-index:9999; padding:1rem; }
+        .fundo-popup.aberto { display:flex; }
+        .caixa-popup { background:white; padding:2rem; border-radius:0.8rem; max-width:420px; width:100%; box-shadow:0 0.5rem 2rem rgba(0,0,0,0.25); border-top:0.5rem solid; animation: aparecer 0.3s ease-out; }
+        @keyframes aparecer { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+        .caixa-popup h3 { font-size:1.3rem; margin-bottom:1rem; text-align:center; }
+        .caixa-popup p { font-size:1rem; line-height:1.6; margin-bottom:1.5rem; color:#333; text-align:center; }
+        .caixa-popup .btn-ok { width:100%; padding:0.8rem; font-size:1rem; font-weight:bold; border:none; border-radius:0.5rem; cursor:pointer; color:white; margin-top:0.5rem; }
+        .caixa-popup .btn-secundario { background:#e0e0e0; color:#333; width:100%; padding:0.7rem; margin-top:0.5rem; border:none; border-radius:0.5rem; cursor:pointer; font-weight:500; }
+        .caixa-popup.atraso { border-color:#c62828; }
+        .caixa-popup.atraso h3 { color:#c62828; }
+        .caixa-popup.atraso .btn-ok { background:#c62828; }
+        .caixa-popup.amanha { border-color:#f57c00; }
+        .caixa-popup.amanha h3 { color:#e65100; }
+        .caixa-popup.amanha .btn-ok { background:#f57c00; }
     </style>
 </head>
 <body>
@@ -143,6 +159,16 @@
         document.getElementById('valor').addEventListener('input', verificarPreenchimentoAutomatico);
         document.getElementById('pagamento').addEventListener('change', verificarPreenchimentoAutomatico);
         document.getElementById('data').addEventListener('input', verificarPreenchimentoAutomatico);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                carregarAvisos();
+                atualizarSoma();
+            }
+        });
+
+        carregarAvisos();
+        atualizarSoma();
     });
 
     function sair() {}
@@ -153,6 +179,8 @@
         <h1>🔹 Financo</h1>
         <button class="btn-sair" onclick="sair()">🚪 Sair</button>
     </div>
+
+    <div class="aviso-topo" id="caixaAvisos"></div>
 
     <div class="barra-botoes">
         <div style="position: relative;">
@@ -291,6 +319,16 @@
     </div>
 </div>
 
+<!-- POP-UP ÚNICO PARA TODOS OS AVISOS -->
+<div class="fundo-popup" id="popupAvisoGeral">
+    <div class="caixa-popup" id="caixaPopupAtual">
+        <h3 id="tituloPopup"></h3>
+        <p id="textoPopup"></p>
+        <button class="btn-ok" id="btnAcaoPopup"></button>
+        <button class="btn-secundario" id="btnProximoPopup" style="display:none;">Próximo Aviso</button>
+    </div>
+</div>
+
 <script>
     let lancamentos = [];
     let ultimo = '';
@@ -298,6 +336,8 @@
     let itensDespesa = ['Fornecedor', 'Salário', 'Aluguel'];
     let indiceEdicaoAtual = null;
     let pastaUltimosSalvos = [];
+    let listaAvisos = [];
+    let indiceAvisoAtual = 0;
 
     function dataHoje() {
         const d = new Date();
@@ -357,13 +397,31 @@
         });
     }
 
+    function hojeData() { return new Date(new Date().toDateString()); }
+
     function atualizarSoma() {
         let v = 0, d = 0;
         lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
+        
+        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        const hoje = hojeData();
+        contas.forEach(c => {
+            if (!c.paga) {
+                const venc = new Date(c.vencimento + 'T00:00:00');
+                const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+                if (diff < 0 || diff === 1) {
+                    d += Number(c.valor) || 0;
+                }
+            }
+        });
+
         const saldo = v - d;
         document.getElementById('totalVendas').textContent = `R$ ${v.toFixed(2).replace('.', ',')}`;
         document.getElementById('totalDespesas').textContent = `R$ ${d.toFixed(2).replace('.', ',')}`;
         document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
+        
+        const elSaldo = document.getElementById('saldo');
+        elSaldo.style.color = saldo < 0 ? '#ffcdd2' : 'white';
     }
 
     function limparCampos() {
@@ -431,7 +489,7 @@
         const tab = document.getElementById('tabelaExportar');
         tab.innerHTML = '';
         lancamentos.forEach((l, i) => {
-            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.', ',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
+            tab.innerHTML += `<tr><td etiqueta="Data">${l.data}</td><td etiqueta="Tipo" class="${l.tipo}">${l.tipo === 'venda' ? 'Venda' : 'Despesa'}</td><td etiqueta="Item">${l.item}</td><td etiqueta="Valor">R$ ${l.valor.toFixed(2).replace('.',',')}</td><td etiqueta="Pagamento">${l.pag}</td><td etiqueta="Observação">${l.obs}</td><td etiqueta="Ações" class="acao-coluna"><button class="btn-acao salvar" style="margin: 2px;" onclick="abrirEdicao(${i})">✏️</button><button class="btn-acao excluir" style="margin: 2px;" onclick="excluirLancamento(${i})">🗑️</button></td></tr>`;
         });
         let v=0, d=0;
         lancamentos.forEach(l=>l.tipo==='venda'?v+=l.valor:d+=l.valor);
@@ -502,6 +560,97 @@
             console.error('Erro Supabase:', erro);
             alert(`❌ Falha ao salvar: ${erro.message || 'Verifique sua conexão'}`);
         }
+    }
+
+    // === FUNÇÕES DOS POP-UPS DE AVISOS ===
+    function formatarMoeda(v) { return Number(v||0).toFixed(2).replace('.',','); }
+    function formatarDataBR(d) { if(!d)return''; const [a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; }
+
+    function verificarStatusConta(conta) {
+        if (conta.paga) return null;
+        const venc = new Date(conta.vencimento + 'T00:00:00');
+        const hoje = hojeData();
+        const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+        
+        if (diff < 0) return { tipo: 'atrasada', dias: Math.abs(diff) };
+        if (diff === 1) return { tipo: 'amanha' };
+        return null;
+    }
+
+    function carregarAvisos() {
+        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        listaAvisos = [];
+        indiceAvisoAtual = 0;
+
+        contas.forEach(c => {
+            const status = verificarStatusConta(c);
+            if (status) listaAvisos.push({ ...c, status });
+        });
+
+        listaAvisos.sort((a,b) => {
+            if (a.status.tipo !== b.status.tipo) return a.status.tipo === 'atrasada' ? -1 : 1;
+            if (a.status.tipo === 'atrasada') return b.status.dias - a.status.dias;
+            return new Date(a.vencimento) - new Date(b.vencimento);
+        });
+
+        const caixa = document.getElementById('caixaAvisos');
+        if (listaAvisos.length === 0) {
+            caixa.innerHTML = `<p style="color:#2e7d32; text-align:center; padding:1rem;">✅ Nenhuma conta atrasada ou vencendo amanhã!</p>`;
+        } else {
+            caixa.innerHTML = `<p style="color:#f57c00; text-align:center; padding:1rem;">⚠️ Você tem ${listaAvisos.length} aviso(s) de contas!</p>`;
+            setTimeout(() => mostrarProximoAviso(), 500);
+        }
+
+        atualizarSoma();
+    }
+
+    function mostrarProximoAviso() {
+        if (indiceAvisoAtual >= listaAvisos.length) {
+            fecharPopupAviso();
+            return;
+        }
+
+        const aviso = listaAvisos[indiceAvisoAtual];
+        const popupFundo = document.getElementById('popupAvisoGeral');
+        const caixa = document.getElementById('caixaPopupAtual');
+        const titulo = document.getElementById('tituloPopup');
+        const texto = document.getElementById('textoPopup');
+        const btnOk = document.getElementById('btnAcaoPopup');
+        const btnProx = document.getElementById('btnProximoPopup');
+
+        caixa.classList.remove('atraso', 'amanha');
+
+        if (aviso.status.tipo === 'atrasada') {
+            caixa.classList.add('atraso');
+            titulo.textContent = '🔴 CONTA ATRASADA!';
+            texto.innerHTML = `A conta <strong>${aviso.nome}</strong> está ATRASADA há <strong>${aviso.status.dias} dia(s)</strong>!<br><br>Valor: <strong>R$ ${formatarMoeda(aviso.valor)}</strong><br>Vencimento: ${formatarDataBR(aviso.vencimento)}<br><strong>Regularize o quanto antes!</strong>`;
+            btnOk.textContent = 'Vou Pagar';
+            btnOk.onclick = () => {
+                indiceAvisoAtual++;
+                mostrarProximoAviso();
+            };
+        } else {
+            caixa.classList.add('amanha');
+            titulo.textContent = '⚠️ AVISO DE VENCIMENTO';
+            texto.innerHTML = `A conta <strong>${aviso.nome}</strong> vence amanhã!<br><br>Valor: <strong>R$ ${formatarMoeda(aviso.valor)}</strong><br>Vencimento: ${formatarDataBR(aviso.vencimento)}<br><strong>Evite juros e multas!</strong>`;
+            btnOk.textContent = 'Entendido';
+            btnOk.onclick = () => {
+                indiceAvisoAtual++;
+                mostrarProximoAviso();
+            };
+        }
+
+        btnProx.style.display = (indiceAvisoAtual + 1 < listaAvisos.length) ? 'block' : 'none';
+        btnProx.onclick = () => {
+            indiceAvisoAtual++;
+            mostrarProximoAviso();
+        };
+
+        popupFundo.classList.add('aberto');
+    }
+
+    function fecharPopupAviso() {
+        document.getElementById('popupAvisoGeral').classList.remove('aberto');
     }
 </script>
 </div>
