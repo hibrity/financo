@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contas — Pagas/Excluídas somem da lista</title>
+    <title>Contas — Lançamentos</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
         body { background: #f5f5f5; padding: 1rem; max-width: 900px; margin: 0 auto; }
@@ -12,11 +13,28 @@
         .btn-voltar button { padding: 0.6rem 1rem; border: none; border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem; transition: 0.2s; background: #616161; color: white; }
         .btn-voltar button:hover { background: #424242; }
 
-        .secao-contas { padding: 1.25rem; background: #fff; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.08); }
+        .aviso-lancamento {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+            color: white; padding: 1.3rem; border-radius: 0.8rem;
+            margin-bottom: 1.5rem; display: none; animation: surgir 0.6s ease-out;
+            box-shadow: 0 4px 15px rgba(13, 71, 161, 0.35);
+        }
+        .aviso-lancamento.mostrar { display: block; }
+        @keyframes surgir {
+            from { transform: translateY(-15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .aviso-lancamento h4 { font-size: 1.15rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        .aviso-lancamento .linha-aviso { margin: 0.4rem 0; font-size: 0.98rem; }
+        .aviso-lancamento .linha-aviso strong { color: #bbdefb; }
+        .aviso-lancamento .codigo { font-family: 'Courier New', monospace; font-size: 0.88rem; margin-top: 0.7rem; padding: 0.4rem; background: rgba(255,255,255,0.15); border-radius: 0.3rem; }
+
+        .secao-contas { padding: 1.25rem; background: #fff; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.08); margin-bottom: 1.25rem; }
         .titulo-secao { font-size: 1.25rem; color: #1565c0; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
         .btn { padding: 0.6rem 1rem; border: none; border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
         .btn.primario { background: #1565c0; color: white; }
         .btn.sucesso { background: #2e7d32; color: white; }
+        .btn.aviso { background: #f57c00; color: white; }
         .btn.secundario { background: #e0e0e0; color: #333; }
         .btn.perigo { background: #c62828; color: white; }
         .btn.pequeno { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
@@ -29,8 +47,8 @@
         .card-resumo.pago { background: #2e7d32; }
         .card-resumo .val { font-size: 1.25rem; font-weight: bold; margin-top: 0.3rem; }
 
-        .form { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; margin-bottom: 1.25rem; }
-        .form.aberto { max-height: 2000px; opacity: 1; }
+        .formulario { max-height: 0; overflow: hidden; opacity: 0; transition: all 0.4s ease; margin-bottom: 1.25rem; }
+        .formulario.aberto { max-height: 2000px; opacity: 1; }
         .form-interno { padding: 1.25rem; background: #f9f9f9; border-radius: 0.5rem; }
         .linha { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-bottom: 0.9rem; align-items: flex-end; }
         .campo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; }
@@ -38,80 +56,75 @@
         input, select { padding: 0.6rem; border: 1px solid #ccc; border-radius: 0.35rem; font-size: 0.95rem; }
         input:focus, select:focus { outline: none; border-color: #1565c0; }
 
-        .item-conta { padding: 0.9rem; border-radius: 0.5rem; margin-bottom: 0.6rem; border-left: 5px solid; background: #fafafa; transition: opacity 0.3s ease; }
+        .item-conta { padding: 0.9rem; border-radius: 0.5rem; margin-bottom: 0.6rem; border-left: 5px solid; background: #fafafa; }
         .item-conta.vencer { border-left-color: #1976d2; background: #f0f7ff; }
         .item-conta.atrasado { border-left-color: #c62828; background: #ffebee; }
-        .recorrencia-tag { display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.4rem; background: #e3f2fd; color: #1565c0; border-radius: 0.25rem; margin-left: 0.5rem; }
+        .tag-automatico { display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.4rem; background: #e8f5e8; color: #2e7d32; border-radius: 0.25rem; margin-left: 0.5rem; }
         .acoes-conta { margin-top: 0.7rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-        .fundo-popup {
-            display: none; position: fixed; top:0; left:0;
-            width:100%; height:100%; background:rgba(0,0,0,0.6);
-            align-items:center; justify-content:center; z-index:9999; padding:1rem;
-        }
-        .fundo-popup.aberto { display:flex; }
-        .caixa-popup {
-            background:white; padding:2rem; border-radius:0.8rem;
-            max-width:420px; width:100%; box-shadow:0 0.5rem 2rem rgba(0,0,0,0.25);
-            border-top:0.5rem solid; animation: aparecer 0.3s ease-out;
-        }
-        .caixa-popup.aviso { border-color:#f57c00; }
-        .caixa-popup.atraso { border-color:#c62828; }
-        @keyframes aparecer { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
-        .caixa-popup h3 { font-size:1.3rem; margin-bottom:1rem; text-align:center; }
-        .caixa-popup.aviso h3 { color:#e65100; }
-        .caixa-popup.atraso h3 { color:#c62828; }
-        .caixa-popup p { font-size:1rem; line-height:1.6; margin-bottom:1.5rem; color:#333; text-align:center; }
-        .caixa-popup .btn-ok { width:100%; padding:0.8rem; font-size:1rem; font-weight:bold; border:none; border-radius:0.5rem; cursor:pointer; }
-        .caixa-popup.aviso .btn-ok { background:#f57c00; color:white; }
-        .caixa-popup.atraso .btn-ok { background:#c62828; color:white; }
+        /* ESTILOS DO LEITOR */
+        .fundo-leitor { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; padding: 1rem; flex-direction: column; align-items: center; justify-content: center; }
+        .fundo-leitor.aberto { display: flex; }
+        .caixa-leitor { width: 100%; max-width: 500px; background: white; border-radius: 0.8rem; overflow: hidden; }
+        .cabecalho-leitor { padding: 1rem; background: #1565c0; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .area-camera { width: 100%; min-height: 300px; background: #000; }
+        .botoes-leitor { padding: 1rem; display: flex; gap: 0.5rem; justify-content: center; }
+        .resultado-leitura { padding: 1rem; background: #e3f2fd; border-top: 1px solid #ddd; display: none; }
+        .resultado-leitura.mostrar { display: block; }
     </style>
 </head>
 <body>
 
 <div class="btn-voltar">
-    <button onclick="window.location.href='index.html'">⬅️ Voltar ao Sistema</button>
+    <button onclick="window.location.href='index.html'">⬅️ Voltar ao Painel Principal</button>
+</div>
+
+<div class="aviso-lancamento" id="avisoNovoLancamento">
+    <h4>📢 LANÇAMENTO RECEBIDO</h4>
+    <div class="linha-aviso">Emitente: <strong id="avisoEmitente"></strong></div>
+    <div class="linha-aviso">Tipo: <strong id="avisoTipo"></strong></div>
+    <div class="linha-aviso">Valor: <strong id="avisoValor"></strong></div>
+    <div class="linha-aviso">Vencimento: <strong id="avisoVenc"></strong></div>
+    <div class="codigo">Código: <span id="avisoCodigo"></span></div>
 </div>
 
 <div class="secao-contas">
     <div class="titulo-secao">
-        <span>🧾 Contas e Boletos</span>
-        <button class="btn primario pequeno" onclick="alternarFormContas()">+ Nova Conta</button>
+        <span>🧾 Minhas Contas</span>
+        <div style="display:flex; gap:0.5rem;">
+            <button class="btn aviso pequeno" onclick="abrirLeitor()">📷 Ler Código</button>
+            <button class="btn primario pequeno" onclick="abrirFormManual()">+ Adicionar</button>
+        </div>
     </div>
 
     <div class="resumo-contas">
-        <div class="card-resumo vencer">
-            <div>📄 A VENCER</div>
-            <div class="val" id="resumoVencer">R$ 0,00</div>
-        </div>
-        <div class="card-resumo atrasado">
-            <div>🔴 ATRASADAS</div>
-            <div class="val" id="resumoAtrasado">R$ 0,00</div>
-        </div>
-        <div class="card-resumo pago">
-            <div>✅ PAGAS</div>
-            <div class="val" id="resumoPago">R$ 0,00</div>
-        </div>
+        <div class="card-resumo vencer"><div>📄 A VENCER</div><div class="val" id="resumoVencer">R$ 0,00</div></div>
+        <div class="card-resumo atrasado"><div>🔴 ATRASADAS</div><div class="val" id="resumoAtrasado">R$ 0,00</div></div>
+        <div class="card-resumo pago"><div>✅ PAGAS</div><div class="val" id="resumoPago">R$ 0,00</div></div>
     </div>
 
-    <div class="form" id="formContas">
+    <div class="formulario" id="formManual">
         <div class="form-interno">
             <div class="linha">
-                <div class="campo" style="flex:2;"><label>Descrição</label><input type="text" id="contaNome" placeholder="Ex: Aluguel, Energia"></div>
-                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="contaValor"></div>
+                <div class="campo" style="flex:2;"><label>Descrição / Fornecedor</label><input type="text" id="nomeManual" placeholder="Ex: Aluguel, Sadia"></div>
+                <div class="campo"><label>Valor R$</label><input type="number" step="0.01" id="valorManual"></div>
             </div>
             <div class="linha">
-                <div class="campo"><label>Vencimento</label><input type="text" id="contaVencimento" placeholder="dd/mm/aaaa" maxlength="10" oninput="aplicarMascaraData(this)"></div>
-                <div class="campo"><label>Recorrência</label><select id="contaRecorrencia">
-                    <option value="unica">Única vez</option>
-                    <option value="mensal">Mensal</option>
-                    <option value="anual">Anual</option>
-                </select></div>
-                <div class="campo"><label>Obs</label><input type="text" id="contaObs"></div>
+                <div class="campo"><label>Vencimento</label><input type="text" id="vencManual" placeholder="dd/mm/aaaa" maxlength="10" oninput="aplicarMascaraData(this)"></div>
+                <div class="campo"><label>Recorrência</label>
+                    <select id="recorrenciaManual">
+                        <option value="unica">Única vez</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="anual">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <div class="linha">
+                <div class="campo"><label>Código de Barras / Linha Digitável</label><input type="text" id="codigoBoleto" placeholder="Cole ou leia o código aqui"></div>
             </div>
             <div class="linha" style="margin-top:0.5rem;">
-                <button class="btn secundario" onclick="alternarFormContas()">❌ Cancelar</button>
-                <button class="btn sucesso" onclick="cadastrarConta()">✅ Cadastrar</button>
+                <button class="btn secundario" onclick="fecharFormManual()">❌ Cancelar</button>
+                <button class="btn sucesso" onclick="salvarLancamentoManual()">✅ Salvar</button>
             </div>
         </div>
     </div>
@@ -119,24 +132,30 @@
     <div id="listaContas"></div>
 </div>
 
-<div class="fundo-popup" id="popupAviso">
-    <div class="caixa-popup aviso">
-        <h3>⚠️ AVISO DE VENCIMENTO</h3>
-        <p id="textoPopupAviso"></p>
-        <button class="btn-ok" onclick="fecharPopupAviso()">Entendido</button>
-    </div>
-</div>
-
-<div class="fundo-popup" id="popupAtraso">
-    <div class="caixa-popup atraso">
-        <h3>🔴 CONTA ATRASADA!</h3>
-        <p id="textoPopupAtraso"></p>
-        <button class="btn-ok" onclick="fecharPopupAtraso()">Vou Pagar</button>
+<!-- JANELA DO LEITOR DE CÂMERA -->
+<div class="fundo-leitor" id="fundoLeitor">
+    <div class="caixa-leitor">
+        <div class="cabecalho-leitor">
+            <h5>📷 Leitor de Código</h5>
+            <button class="btn pequeno" style="background:rgba(255,255,255,0.2); color:white;" onclick="fecharLeitor()">✕ Fechar</button>
+        </div>
+        <div id="cameraLeitor" class="area-camera"></div>
+        <div class="resultado-leitura" id="resultadoLeitura">
+            <strong>Código lido:</strong>
+            <p id="textoLido" style="margin:0.5rem 0; word-break:break-all;"></p>
+            <div class="botoes-leitor">
+                <button class="btn secundario pequeno" onclick="limparLeitura()">Limpar</button>
+                <button class="btn sucesso pequeno" onclick="usarCodigo()">✅ Usar esse código</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
     let contas = [];
+    let emitentesPermitidos = JSON.parse(localStorage.getItem('emitentes_autorizados') || '["Sadia", "Energia", "Água", "Aluguel", "Internet"]');
+    let leitorCamera = null;
+    let ultimoCodigoLido = '';
 
     function aplicarMascaraData(campo) {
         let valor = campo.value.replace(/\D/g, '');
@@ -147,158 +166,251 @@
     }
 
     function formatarMoeda(v) { return Number(v||0).toFixed(2).replace('.',','); }
-    function formatarDataBR(d) { if(!d)return''; const [a,m,dd]=d.split('-'); return `${dd}/${m}/${a}`; }
-    function converterParaISO(dataBR) {
+    function converterISO(dataBR) {
         if(!dataBR) return null;
-        const partes = dataBR.split('/');
-        if(partes.length!==3) return null;
-        const [dd,mm,aaaa] = partes;
-        const data = new Date(`${aaaa}-${mm}-${dd}T00:00:00`);
-        if(isNaN(data.getTime())) return null;
-        return `${aaaa}-${mm}-${dd}`;
+        const [dd,mm,aaaa] = dataBR.split('/');
+        if(!dd || !mm || !aaaa) return null;
+        return `${aaaa}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
     }
-    function hojeData() { return new Date(new Date().toDateString()); }
-    function chaveDia(id) { return `aviso_${id}_${hojeData().toDateString()}`; }
 
-    function verificarStatusConta(conta) {
-        if (conta.paga) return { classe:'pago', mensagem:`✅ Paga em ${formatarDataBR(conta.dataPagamento)}`, tipo:null };
+    // ==============================================
+    // FUNÇÕES DO LEITOR DE CÂMERA
+    // ==============================================
+    async function abrirLeitor() {
+        document.getElementById('fundoLeitor').classList.add('aberto');
+        ultimoCodigoLido = '';
+        document.getElementById('resultadoLeitura').classList.remove('mostrar');
+        
+        if(!leitorCamera) {
+            leitorCamera = new Html5Qrcode("cameraLeitor");
+        }
 
-        const venc = new Date(conta.vencimento+'T00:00:00');
-        const hoje = hojeData();
-        const diff = Math.ceil((venc - hoje)/(1000*60*60*24));
+        try {
+            await leitorCamera.start(
+                { facingMode: "environment" },
+                { fps: 15, qrbox: {width: 250, height: 250} },
+                (texto) => {
+                    ultimoCodigoLido = texto;
+                    document.getElementById('textoLido').textContent = texto;
+                    document.getElementById('resultadoLeitura').classList.add('mostrar');
+                },
+                (erro) => {}
+            );
+        } catch (e) {
+            alert('❌ Não foi possível acessar a câmera! Verifique as permissões do navegador.');
+            fecharLeitor();
+        }
+    }
 
-        if (diff === 2) {
-            const chave = `aviso2dias_${conta.id}_${hoje.toDateString()}`;
-            if (!localStorage.getItem(chave)) {
-                localStorage.setItem(chave, 'exibido');
-                setTimeout(() => mostrarPopupAviso(conta), 600);
+    async function fecharLeitor() {
+        document.getElementById('fundoLeitor').classList.remove('aberto');
+        if(leitorCamera && leitorCamera.isScanning) {
+            await leitorCamera.stop();
+        }
+    }
+
+    function limparLeitura() {
+        ultimoCodigoLido = '';
+        document.getElementById('resultadoLeitura').classList.remove('mostrar');
+    }
+
+    function usarCodigo() {
+        if(!ultimoCodigoLido) return alert('Nenhum código foi lido ainda!');
+        document.getElementById('codigoBoleto').value = ultimoCodigoLido;
+        fecharLeitor();
+        abrirFormManual();
+        extrairDadosBoleto(ultimoCodigoLido);
+    }
+
+    function extrairDadosBoleto(codigo) {
+        codigo = codigo.replace(/\D/g, '');
+        if(codigo.length < 44) return;
+
+        try {
+            let valor = 0;
+            let vencimento = '';
+
+            if(codigo.length === 47) {
+                const fator = parseInt(codigo.substring(33,37));
+                valor = parseInt(codigo.substring(37)) / 100;
+                const dataBase = new Date('1997-10-07');
+                dataBase.setDate(dataBase.getDate() + fator);
+                vencimento = dataBase.toISOString().split('T')[0].split('-').reverse().join('/');
             }
-            return { classe:'vencer', mensagem:`📄 Vence em 2 dias`, tipo:'aviso' };
-        }
 
-        if (diff < 0) {
-            const dias = Math.abs(diff);
-            const chave = chaveDia(conta.id);
-            const qtd = parseInt(localStorage.getItem(chave)||'0');
-            if (qtd < 2) {
-                localStorage.setItem(chave, qtd+1);
-                setTimeout(() => mostrarPopupAtraso(conta, dias), 800);
-            }
-            return { classe:'atrasado', mensagem:`🔴 ATRASADA há ${dias} dia(s)`, tipo:'atrasado', dias };
-        }
-
-        return { classe:'vencer', mensagem:`📄 Vence em ${diff} dia(s)`, tipo:null };
-    }
-
-    function mostrarPopupAviso(conta) {
-        document.getElementById('textoPopupAviso').innerHTML = 
-            `A conta <strong>${conta.nome}</strong> vence em <strong>2 dias</strong>.<br><br>Valor: <strong>R$ ${formatarMoeda(conta.valor)}</strong><br>Vencimento: ${formatarDataBR(conta.vencimento)}<br><br>Providencie o pagamento.`;
-        document.getElementById('popupAviso').classList.add('aberto');
-    }
-    function fecharPopupAviso() { document.getElementById('popupAviso').classList.remove('aberto'); }
-
-    function mostrarPopupAtraso(conta, dias) {
-        document.getElementById('textoPopupAtraso').innerHTML = 
-            `A conta <strong>${conta.nome}</strong> está ATRASADA há <strong>${dias} dia(s)</strong>!<br><br>Valor: <strong>R$ ${formatarMoeda(conta.valor)}</strong><br>Vencimento: ${formatarDataBR(conta.vencimento)}<br><strong>Regularize o quanto antes!</strong>`;
-        document.getElementById('popupAtraso').classList.add('aberto');
-    }
-    function fecharPopupAtraso() { document.getElementById('popupAtraso').classList.remove('aberto'); }
-
-    function alternarFormContas() {
-        document.getElementById('formContas').classList.toggle('aberto');
-        ['contaNome','contaValor','contaVencimento','contaObs'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('contaRecorrencia').value='unica';
-    }
-    function cadastrarConta() {
-        const nome = document.getElementById('contaNome').value.trim();
-        const valor = parseFloat(document.getElementById('contaValor').value||0);
-        const vencBR = document.getElementById('contaVencimento').value.trim();
-        const rec = document.getElementById('contaRecorrencia').value;
-        const obs = document.getElementById('contaObs').value.trim()||'-';
-        
-        const vencISO = converterParaISO(vencBR);
-        if(!nome||!valor||!vencISO) return alert('Preencha corretamente: Nome, Valor e Vencimento (dd/mm/aaaa)!');
-        
-        contas.push({id:Date.now(),nome,valor,vencimento:vencISO,recorrencia:rec,obs,paga:false,dataPagamento:null});
-        salvarContas(); alternarFormContas(); alert('✅ Conta cadastrada!');
-    }
-
-    function marcarComoPaga(id) {
-        const c = contas.find(x=>x.id===id); if(!c)return;
-        c.paga=true; c.dataPagamento=new Date().toISOString().split('T')[0];
-        
-        let mensagem = '✅ Conta PAGA! Saiu da lista.';
-        if(c.recorrencia!=='unica'){
-            const prox=new Date(c.vencimento+'T00:00:00');
-            c.recorrencia==='mensal'?prox.setMonth(prox.getMonth()+1):prox.setFullYear(prox.getFullYear()+1);
-            contas.push({id:Date.now(),nome:c.nome,valor:c.valor,vencimento:prox.toISOString().split('T')[0],recorrencia:c.recorrencia,obs:c.obs,paga:false,dataPagamento:null});
-            mensagem += '\n🔄 Próxima conta gerada!';
-        }
-        
-        salvarContas();
-        alert(mensagem);
-    }
-
-    function excluirConta(id) {
-        if(confirm('Tem certeza? A conta será removida da lista.')){
-            contas = contas.filter(x=>x.id!==id);
-            salvarContas();
+            if(valor > 0) document.getElementById('valorManual').value = valor.toFixed(2);
+            if(vencimento) document.getElementById('vencManual').value = vencimento;
+            document.getElementById('nomeManual').value = 'Boleto Bancário';
+        } catch(e) {
+            console.log('Não foi possível extrair dados automaticamente, preencha manualmente');
         }
     }
 
-    function salvarContas() {
-        localStorage.setItem('contas_some_ao_pagar',JSON.stringify(contas));
+    // ==============================================
+    // FUNÇÃO DE RECEBIMENTO AUTOMÁTICO
+    // ==============================================
+    function receberLancamento(emitente, tipo, valor, vencimento, numeroDoc = "") {
+        if (!emitente || !valor || !converterISO(vencimento)) return;
+
+        if (!emitentesPermitidos.includes(emitente)) {
+            emitentesPermitidos.push(emitente);
+            localStorage.setItem('emitentes_autorizados', JSON.stringify(emitentesPermitidos));
+        }
+
+        const data = new Date();
+        const mesAno = `${data.getFullYear()}${String(data.getMonth()+1).padStart(2,'0')}`;
+        const sequencia = contas.filter(c => c.emitente === emitente).length + 1;
+        const codigo = `${tipo.substring(0,3).toUpperCase()}-${emitente.substring(0,3).toUpperCase()}-${mesAno}-${String(sequencia).padStart(3,'0')}`;
+
+        contas.push({
+            id: Date.now(),
+            nome: `${tipo === 'boleto' ? 'Boleto' : 'Nota Fiscal'} - ${emitente}`,
+            emitente: emitente,
+            tipo: tipo,
+            valor: Number(valor),
+            vencimento: converterISO(vencimento),
+            codigo: codigo,
+            numeroDoc: numeroDoc,
+            origem: 'automatica',
+            paga: false,
+            dataRecebimento: new Date().toISOString()
+        });
+
+        document.getElementById('avisoEmitente').textContent = emitente;
+        document.getElementById('avisoTipo').textContent = tipo === 'boleto' ? 'Boleto Bancário' : 'Nota Fiscal';
+        document.getElementById('avisoValor').textContent = `R$ ${formatarMoeda(valor)}`;
+        document.getElementById('avisoVenc').textContent = vencimento;
+        document.getElementById('avisoCodigo').textContent = codigo;
+        document.getElementById('avisoNovoLancamento').classList.add('mostrar');
+        setTimeout(() => document.getElementById('avisoNovoLancamento').classList.remove('mostrar'), 12000);
+
+        salvarDados();
+    }
+
+    function abrirFormManual() {
+        document.getElementById('formManual').classList.add('aberto');
+    }
+    function fecharFormManual() {
+        document.getElementById('formManual').classList.remove('aberto');
+        ['nomeManual','valorManual','vencManual','codigoBoleto'].forEach(id=>document.getElementById(id).value='');
+    }
+    function salvarLancamentoManual() {
+        const nome = document.getElementById('nomeManual').value.trim();
+        const valor = parseFloat(document.getElementById('valorManual').value || 0);
+        const vencBR = document.getElementById('vencManual').value.trim();
+        const vencISO = converterISO(vencBR);
+        const recorrencia = document.getElementById('recorrenciaManual').value;
+        const codigo = document.getElementById('codigoBoleto').value.trim();
+
+        if (!nome || !valor || !vencISO) return alert('Preencha os dados obrigatórios!');
+
+        contas.push({
+            id: Date.now(),
+            nome: nome,
+            emitente: nome,
+            valor: valor,
+            vencimento: vencISO,
+            recorrencia: recorrencia,
+            codigoBarras: codigo,
+            origem: 'manual',
+            paga: false
+        });
+
+        fecharFormManual();
+        salvarDados();
+        alert('✅ Conta cadastrada com sucesso!');
+    }
+
+    function salvarDados() {
+        localStorage.setItem('contas_some_ao_pagar', JSON.stringify(contas));
         renderizarContas();
         atualizarResumo();
     }
 
     function renderizarContas() {
-        const lista=document.getElementById('listaContas');
-        lista.innerHTML='';
-
-        const contasAtivas = contas.filter(c => !c.paga);
-
-        contasAtivas.sort((a,b)=>{
-            const ordem={atrasado:0,vencer:1};
-            return ordem[verificarStatusConta(a).classe]-ordem[verificarStatusConta(b).classe] || new Date(a.vencimento)-new Date(b.vencimento);
+        const lista = document.getElementById('listaContas');
+        lista.innerHTML = '';
+        const hoje = new Date().toDateString();
+        contas.filter(c => !c.paga).sort((a,b) => {
+            const vencA = new Date(a.vencimento).toDateString();
+            const vencB = new Date(b.vencimento).toDateString();
+            if (vencA < hoje && vencB >= hoje) return -1;
+            if (vencB < hoje && vencA >= hoje) return 1;
+            return new Date(a.vencimento) - new Date(b.vencimento);
+        }).forEach(c => {
+            const vencBR = c.vencimento.split('-').reverse().join('/');
+            const classe = new Date(c.vencimento).toDateString() < hoje ? 'atrasado' : 'vencer';
+            lista.innerHTML += `
+            <div class="item-conta ${classe}">
+                <strong>${c.nome}</strong>
+                ${c.origem === 'automatica' ? '<span class="tag-automatico">📩 Recebido automaticamente</span>' : ''}
+                <div style="margin:0.4rem 0;">Valor: R$ ${formatarMoeda(c.valor)} | Venc.: ${vencBR}</div>
+                ${c.codigoBarras ? `<div style="font-size:0.8rem; color:#666; margin-top:0.2rem;">Código: ${c.codigoBarras.substring(0,30)}...</div>` : ''}
+                <div class="acoes-conta">
+                    <button class="btn sucesso pequeno" onclick="marcarPaga(${c.id})">✅ Pagar</button>
+                    <button class="btn perigo pequeno" onclick="excluirConta(${c.id})">🗑️ Excluir</button>
+                </div>
+            </div>`;
         });
+    }
 
-        if(contasAtivas.length===0){
-            lista.innerHTML='<p style="text-align:center;color:#666;padding:1.5rem;">✅ Nenhuma conta pendente.</p>';
-            return;
+    function marcarPaga(id) {
+        const c = contas.find(x => x.id === id);
+        if (!c) return;
+        c.paga = true;
+        c.dataPagamento = new Date().toISOString().split('T')[0];
+        
+        if(c.recorrencia && c.recorrencia !== 'unica'){
+            const prox = new Date(c.vencimento + 'T00:00:00');
+            c.recorrencia === 'mensal' ? prox.setMonth(prox.getMonth() + 1) : prox.setFullYear(prox.getFullYear() + 1);
+            contas.push({
+                id: Date.now(),
+                nome: c.nome,
+                emitente: c.emitente,
+                valor: c.valor,
+                vencimento: prox.toISOString().split('T')[0],
+                recorrencia: c.recorrencia,
+                origem: 'manual',
+                paga: false
+            });
+            alert('✅ Conta paga! Próxima foi gerada automaticamente.');
+        } else {
+            alert('✅ Conta paga! Valor removido das despesas.');
         }
+        
+        salvarDados();
+    }
 
-        contasAtivas.forEach(c=>{
-            const st=verificarStatusConta(c);
-            const tag=c.recorrencia==='mensal'?'📅 Mensal':c.recorrencia==='anual'?'📅 Anual':'📅 Única';
-            lista.innerHTML+=`
-                <div class="item-conta ${st.classe}">
-                    <strong>${c.nome}</strong> <span class="recorrencia-tag">${tag}</span>
-                    <div style="margin:0.4rem 0;">Valor: R$ ${formatarMoeda(c.valor)} | Venc.: ${formatarDataBR(c.vencimento)}</div>
-                    <div><strong>${st.mensagem}</strong></div>
-                    <div class="acoes-conta">
-                        <button class="btn sucesso pequeno" onclick="marcarComoPaga(${c.id})">✅ Pagar</button>
-                        <button class="btn perigo pequeno" onclick="excluirConta(${c.id})">🗑️ Excluir</button>
-                    </div>
-                </div>`;
-        });
+    function excluirConta(id) {
+        if (confirm('Tem certeza que deseja excluir?')) {
+            contas = contas.filter(x => x.id !== id);
+            salvarDados();
+        }
     }
 
     function atualizarResumo() {
-        let ven=0, atr=0, pag=0;
-        contas.forEach(c=>{
-            if(c.paga) pag+=c.valor;
-            else if(verificarStatusConta(c).classe==='atrasado') atr+=c.valor;
-            else ven+=c.valor;
+        let ven = 0, atr = 0, pag = 0;
+        const hoje = new Date().toDateString();
+        contas.forEach(c => {
+            if (c.paga) pag += c.valor;
+            else {
+                const venc = new Date(c.vencimento).toDateString();
+                venc < hoje ? atr += c.valor : ven += c.valor;
+            }
         });
-        document.getElementById('resumoVencer').textContent=`R$ ${formatarMoeda(ven)}`;
-        document.getElementById('resumoAtrasado').textContent=`R$ ${formatarMoeda(atr)}`;
-        document.getElementById('resumoPago').textContent=`R$ ${formatarMoeda(pag)}`;
+        document.getElementById('resumoVencer').textContent = `R$ ${formatarMoeda(ven)}`;
+        document.getElementById('resumoAtrasado').textContent = `R$ ${formatarMoeda(atr)}`;
+        document.getElementById('resumoPago').textContent = `R$ ${formatarMoeda(pag)}`;
     }
 
-    window.onload=()=>{
-        const s=localStorage.getItem('contas_some_ao_pagar'); if(s) contas=JSON.parse(s);
-        renderizarContas(); atualizarResumo();
+    window.simularRecebimento = function() {
+        receberLancamento("Sadia", "boleto", 149.90, "10/08/2026", "BOL-78945/2026");
+    }
+
+    window.onload = () => {
+        contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+        renderizarContas();
+        atualizarResumo();
     };
 </script>
 
