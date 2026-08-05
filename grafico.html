@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financo - Gráfico</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
         body { max-width: 900px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
@@ -16,7 +15,6 @@
         .btn.voltar:hover { background: #424242; }
 
         .caixa-grafico { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        .area-grafico { position: relative; height: 320px; width: 100%; }
 
         .resumo { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
         .item-barra { display: flex; align-items: center; gap: 0.75rem; }
@@ -39,7 +37,6 @@
     </div>
 
     <div class="caixa-grafico">
-        <!-- Barras estilo carregamento -->
         <div class="resumo">
             <div class="item-barra">
                 <span class="rotulo">Total Vendas</span>
@@ -68,14 +65,20 @@
     </div>
 
 <script>
+    function hojeData() { return new Date(new Date().toDateString()); }
+
     function pegarTotais() {
         let v = 0, d = 0;
+        // Lendo lançamentos do index
         const lancamentos = JSON.parse(localStorage.getItem('lancamentos_financo') || '[]');
+        // Lendo contas a pagar
         const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
 
+        // Somando vendas e despesas dos lançamentos
         lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
 
-        const hoje = new Date(new Date().toDateString());
+        // Somando contas que vencem hoje, amanhã ou atrasadas
+        const hoje = hojeData();
         contas.forEach(c => {
             if (!c.paga) {
                 const venc = new Date(c.vencimento + 'T00:00:00');
@@ -114,7 +117,9 @@
         document.getElementById('txtSaldo').textContent = `R$ ${dados.saldo.toFixed(2).replace('.', ',')}`;
     }
 
+    // Atualiza automaticamente quando mudar algo no index
     window.addEventListener('storage', atualizarBarras);
+    // Carrega na abertura
     atualizarBarras();
 </script>
 
