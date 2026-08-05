@@ -665,3 +665,146 @@
 </html>
 
 
+
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financo - Gráfico</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { max-width: 900px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
+
+        .cabecalho-pagina { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .titulo-pagina { font-size: 1.5rem; color: #1565c0; }
+        .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .btn.voltar { background: #616161; color: white; }
+        .btn.voltar:hover { background: #424242; }
+
+        .caixa-grafico { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+
+        .resumo { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .item-barra { display: flex; align-items: center; gap: 0.75rem; }
+        .rotulo { width: 140px; font-weight: 600; font-size: 0.95rem; }
+        .fundo-barra { flex: 1; height: 28px; background: #e0e0e0; border-radius: 14px; overflow: hidden; }
+        .barra { height: 100%; width: 0%; border-radius: 14px; transition: width 0.05s linear; display: flex; align-items: center; padding-left: 0.75rem; color: white; font-weight: bold; font-size: 0.85rem; }
+        .barra.vendas { background: linear-gradient(90deg, #2e7d32, #4caf50); }
+        .barra.despesas { background: linear-gradient(90deg, #c62828, #ef5350); }
+        .barra.saldo.positivo { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+        .barra.saldo.negativo { background: linear-gradient(90deg, #f57c00, #ffb74d); }
+    </style>
+</head>
+<body>
+
+    <div class="cabecalho-pagina">
+        <a href="index.html" class="btn voltar">⬅️ Voltar</a>
+        <h2 class="titulo-pagina">📊 Acompanhamento de Valores</h2>
+        <div></div>
+    </div>
+
+    <div class="caixa-grafico">
+        <div class="resumo">
+            <div class="item-barra">
+                <span class="rotulo">Total Vendas</span>
+                <div class="fundo-barra">
+                    <div class="barra vendas" id="barraVendas">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="item-barra">
+                <span class="rotulo">Total Despesas</span>
+                <div class="fundo-barra">
+                    <div class="barra despesas" id="barraDespesas">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="item-barra">
+                <span class="rotulo">Saldo Líquido</span>
+                <div class="fundo-barra">
+                    <div class="barra saldo" id="barraSaldo">R$ 0,00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function hojeData() { return new Date(new Date().toDateString()); }
+
+    function pegarTotais() {
+        let v = 0, d = 0;
+        const lancamentos = JSON.parse(localStorage.getItem('lancamentos_financo') || '[]');
+        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
+
+        lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
+
+        const hoje = hojeData();
+        contas.forEach(c => {
+            if (!c.paga) {
+                const venc = new Date(c.vencimento + 'T00:00:00');
+                const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+                if (diff < 0 || diff === 0 || diff === 1) {
+                    d += Number(c.valor) || 0;
+                }
+            }
+        });
+
+        return { vendas: v, despesas: d, saldo: v - d };
+    }
+
+    // Regra: R$ 50,00 = 1% → R$ 750,00 = 15%
+    function animarBarra(idBarra, valorFinal, ehSaldo = false) {
+        const barra = document.getElementById(idBarra);
+        const valorAbs = Math.abs(valorFinal);
+        const percentualFinal = valorAbs / 50;
+
+        if (ehSaldo) {
+            barra.classList.remove('positivo', 'negativo');
+            barra.classList.add(valorFinal >= 0 ? 'positivo' : 'negativo');
+        }
+
+        let valorAtual = 0;
+        let porcAtual = 0;
+        const passoValor = 30;
+        const passoPerc = passoValor / 50;
+        const intervalo = 35;
+
+        const animacao = setInterval(() => {
+            valorAtual += passoValor;
+            porcAtual += passoPerc;
+
+            if (valorAtual >= valorAbs) {
+                valorAtual = valorAbs;
+                porcAtual = percentualFinal;
+                clearInterval(animacao);
+            }
+
+            barra.style.width = `${porcAtual}%`;
+            barra.textContent = `R$ ${valorAtual.toFixed(2).replace('.', ',')}`;
+        }, intervalo);
+    }
+
+    function atualizarBarras() {
+        const dados = pegarTotais();
+        
+        // Reseta tudo
+        document.getElementById('barraVendas').style.width = '0%';
+        document.getElementById('barraDespesas').style.width = '0%';
+        document.getElementById('barraSaldo').style.width = '0%';
+        document.getElementById('barraVendas').textContent = 'R$ 0,00';
+        document.getElementById('barraDespesas').textContent = 'R$ 0,00';
+        document.getElementById('barraSaldo').textContent = 'R$ 0,00';
+
+        // Anima em sequência
+        setTimeout(() => animarBarra('barraVendas', dados.vendas), 100);
+        setTimeout(() => animarBarra('barraDespesas', dados.despesas), 450);
+        setTimeout(() => animarBarra('barraSaldo', dados.saldo, true), 800);
+    }
+
+    window.addEventListener('storage', atualizarBarras);
+    atualizarBarras();
+</script>
+
+</body>
+</html>
