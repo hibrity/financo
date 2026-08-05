@@ -124,6 +124,9 @@
         .caixa-popup.atraso { border-color:#c62828; }
         .caixa-popup.atraso h3 { color:#c62828; }
         .caixa-popup.atraso .btn-ok { background:#c62828; }
+        .caixa-popup.hoje { border-color:#ff9800; }
+        .caixa-popup.hoje h3 { color:#e65100; }
+        .caixa-popup.hoje .btn-ok { background:#ff9800; }
         .caixa-popup.amanha { border-color:#f57c00; }
         .caixa-popup.amanha h3 { color:#e65100; }
         .caixa-popup.amanha .btn-ok { background:#f57c00; }
@@ -410,7 +413,7 @@
             if (!c.paga) {
                 const venc = new Date(c.vencimento + 'T00:00:00');
                 const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
-                if (diff < 0 || diff === 1) {
+                if (diff < 0 || diff === 0 || diff === 1) {
                     d += Number(c.valor) || 0;
                 }
             }
@@ -550,7 +553,7 @@
         }
     }
 
-    // === FUNÇÕES DE AVISOS EM POP-UP ===
+    // === FUNÇÕES DE AVISOS EM POP-UP (ATUALIZADA COM AVISO DE HOJE) ===
     function formatarDataBrasil(dataStr) {
         const [ano, mes, dia] = dataStr.split('-');
         return `${dia}/${mes}/${ano}`;
@@ -572,6 +575,13 @@
                     tipo: 'atraso',
                     titulo: '🔴 CONTA ATRASADA!',
                     texto: `A conta ${conta.nome} está ATRASADA há ${Math.abs(diasDiferenca)} dia(s)!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nRegularize o quanto antes!`
+                });
+            }
+            else if (diasDiferenca === 0) {
+                listaAvisos.push({
+                    tipo: 'hoje',
+                    titulo: '🟠 CONTA VENCENDO HOJE!',
+                    texto: `A conta ${conta.nome} VENCE HOJE!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nEfetue o pagamento ainda hoje!`
                 });
             }
             else if (diasDiferenca === 1) {
@@ -598,7 +608,7 @@
         const popup = document.getElementById('popupAvisoGeral');
         const caixa = document.getElementById('caixaPopupAtual');
         
-        caixa.classList.remove('atraso', 'amanha');
+        caixa.classList.remove('atraso', 'hoje', 'amanha');
         caixa.classList.add(aviso.tipo);
 
         document.getElementById('tituloPopup').textContent = aviso.titulo;
