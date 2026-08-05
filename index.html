@@ -182,6 +182,7 @@
         <button class="btn-sair" onclick="sair()">🚪 Sair</button>
     </div>
 
+    <!-- ÁREA DE AVISOS TOTALMENTE LIMPA - NADA APARECE AQUI -->
     <div class="aviso-topo" id="caixaAvisos"></div>
 
     <div class="barra-botoes">
@@ -321,6 +322,7 @@
     </div>
 </div>
 
+<!-- POP-UP ÚNICO PARA TODOS OS AVISOS - SÓ APARECE QUANDO TEM ALGO PARA AVISAR -->
 <div class="fundo-popup" id="popupAvisoGeral">
     <div class="caixa-popup" id="caixaPopupAtual">
         <h3 id="tituloPopup"></h3>
@@ -404,6 +406,7 @@
         let v = 0, d = 0;
         lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
         
+        // Soma contas não pagas que estão atrasadas ou vencendo amanhã no card de despesas
         const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
         const hoje = hojeData();
         contas.forEach(c => {
@@ -567,22 +570,29 @@
             const dataVenc = new Date(conta.vencimento + 'T00:00:00');
             const diasDiferenca = Math.ceil((dataVenc - hoje) / (1000 * 60 * 60 * 24));
 
+            // Conta atrasada
             if (diasDiferenca < 0) {
                 listaAvisos.push({
                     tipo: 'atraso',
                     titulo: '🔴 CONTA ATRASADA!',
-                    texto: `A conta ${conta.nome} está ATRASADA há ${Math.abs(diasDiferenca)} dia(s)!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nRegularize o quanto antes!`
+                    texto: `A conta ${conta.nome} está ATRASADA há ${Math.abs(diasDiferenca)} dia(s)!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nRegularize o quanto antes!`,
+                    botao: 'Vou Pagar',
+                    idConta: conta.id
                 });
             }
+            // Vence amanhã
             else if (diasDiferenca === 1) {
                 listaAvisos.push({
                     tipo: 'amanha',
                     titulo: '⚠️ CONTA VENCENDO AMANHÃ',
-                    texto: `A conta ${conta.nome} vence AMANHÃ!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nEvite juros e multas!`
+                    texto: `A conta ${conta.nome} vence AMANHÃ!\n\nValor: R$ ${Number(conta.valor).toFixed(2).replace('.', ',')}\nVencimento: ${formatarDataBrasil(conta.vencimento)}\n\nEvite juros e multas!`,
+                    botao: 'Já Vou Pagar',
+                    idConta: conta.id
                 });
             }
         });
 
+        // NENHUM AVISO FIXO NA TELA - SÓ ABRE POP-UP SE TIVER AVISOS
         if (listaAvisos.length > 0) {
             mostrarProximoAviso();
         }
@@ -598,18 +608,24 @@
         const popup = document.getElementById('popupAvisoGeral');
         const caixa = document.getElementById('caixaPopupAtual');
         
+        // Reseta estilos
         caixa.classList.remove('atraso', 'amanha');
         caixa.classList.add(aviso.tipo);
 
         document.getElementById('tituloPopup').textContent = aviso.titulo;
         document.getElementById('textoPopup').textContent = aviso.texto;
-        document.getElementById('btnAcaoPopup').textContent = 'OK';
+        document.getElementById('btnAcaoPopup').textContent = aviso.botao;
 
+        // Ação do botão principal
         document.getElementById('btnAcaoPopup').onclick = () => {
+            if (aviso.idConta) {
+                window.location.href = 'contas.html';
+            }
             indiceAvisoAtual++;
             mostrarProximoAviso();
         };
 
+        // Mostra botão de próximo se tiver mais avisos
         const btnProx = document.getElementById('btnProximoPopup');
         if (listaAvisos.length > 1 && indiceAvisoAtual < listaAvisos.length - 1) {
             btnProx.style.display = 'block';
@@ -628,6 +644,7 @@
         document.getElementById('popupAvisoGeral').classList.remove('aberto');
     }
 
+    // Funções de salvamento no Supabase e locais
     function salvarNoSupabase() {
         if(!supabase) return alert('Integração com nuvem não disponível!');
         if(lancamentos.length === 0) return alert('Nenhum lançamento para salvar!');
