@@ -426,6 +426,9 @@
         
         const elSaldo = document.getElementById('saldo');
         elSaldo.style.color = saldo < 0 ? '#ffcdd2' : 'white';
+
+        // Linha adicionada para sincronizar com o gráfico
+        localStorage.setItem('lancamentos_financo', JSON.stringify(lancamentos));
     }
 
     function limparCampos() {
@@ -553,7 +556,7 @@
         }
     }
 
-    // === FUNÇÕES DE AVISOS EM POP-UP (ATUALIZADA COM AVISO DE HOJE) ===
+    // === FUNÇÕES DE AVISOS EM POP-UP (COM AVISO DE HOJE) ===
     function formatarDataBrasil(dataStr) {
         const [ano, mes, dia] = dataStr.split('-');
         return `${dia}/${mes}/${ano}`;
