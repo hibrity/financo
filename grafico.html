@@ -2,209 +2,121 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Financo - Gráficos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financo - Gráfico</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; font-family: Arial, sans-serif; box-sizing: border-box; }
-        html { font-size: 16px; }
-        body { max-width: 1200px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
-        h1 { text-align: center; color: #1565c0; margin-bottom: 1.5rem; font-size: 1.75rem; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { max-width: 900px; margin: 1rem auto; padding: 0 0.75rem; background: #f5f5f5; }
 
-        .barra-botoes { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; transition: 0.2s; text-decoration: none; }
+        .cabecalho-pagina { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .titulo-pagina { font-size: 1.5rem; color: #1565c0; }
+        .btn { padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
         .btn.voltar { background: #616161; color: white; }
         .btn.voltar:hover { background: #424242; }
-        .btn.primario { background: #1565c0; color: white; }
-        .btn.primario:hover { background: #0d47a1; }
 
-        .aviso-vazio { background: white; padding: 2rem; border-radius: 0.5rem; text-align: center; color: #666; font-size: 1rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 2rem; }
-        .carregando { color: #1565c0; font-weight: 500; }
+        .caixa-grafico { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .area-grafico { position: relative; height: 320px; width: 100%; }
 
-        .container-grafico { background: white; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem; }
-        .titulo-grafico { color: #1565c0; font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
-        .grafico-wrapper { position: relative; height: 350px; width: 100%; }
-
-        .resumo { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
-        .card { flex: 1 1 150px; padding: 1rem; border-radius: 0.5rem; text-align: center; font-size: 0.9rem; }
-        .card.vendas { background: #e8f5e9; color: #2e7d32; }
-        .card.despesas { background: #ffebee; color: #c62828; }
-        .card.saldo { background: #e3f2fd; color: #1565c0; }
-        .valor { font-size: 1.3rem; font-weight: bold; margin-top: 0.3rem; }
-
-        @media print {
-            body { background: white; }
-            .barra-botoes { display: none !important; }
-            .container-grafico { box-shadow: none; border: 1px solid #eee; margin-bottom: 1.5rem; }
-            .aviso-vazio { box-shadow: none; border: 1px solid #eee; }
-            .resumo .card { box-shadow: none; border: 1px solid #eee; }
-            @page { size: A4; margin: 1.5cm; }
-        }
-
-        @media (max-width: 768px) {
-            .grafico-wrapper { height: 300px; }
-            .card { flex: 1 1 100%; }
-        }
+        .resumo { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .item-barra { display: flex; align-items: center; gap: 0.75rem; }
+        .rotulo { width: 140px; font-weight: 600; font-size: 0.95rem; }
+        .fundo-barra { flex: 1; height: 28px; background: #e0e0e0; border-radius: 14px; overflow: hidden; position: relative; }
+        .barra { height: 100%; border-radius: 14px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 0.75rem; color: white; font-weight: bold; font-size: 0.85rem; }
+        .barra.vendas { background: linear-gradient(90deg, #2e7d32, #4caf50); }
+        .barra.despesas { background: linear-gradient(90deg, #c62828, #ef5350); }
+        .barra.saldo.positivo { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+        .barra.saldo.negativo { background: linear-gradient(90deg, #f57c00, #ffb74d); }
+        .valor-texto { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-weight: bold; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <h1>📊 Gráficos e Estatísticas</h1>
-    <div class="barra-botoes">
-        <a href="index.html" class="btn voltar">⬅️ Voltar ao Início</a>
-        <button class="btn primario" onclick="baixarPDF()">📄 Baixar em PDF</button>
+    <div class="cabecalho-pagina">
+        <a href="index.html" class="btn voltar">⬅️ Voltar</a>
+        <h2 class="titulo-pagina">📊 Acompanhamento de Valores</h2>
+        <div></div>
     </div>
 
-    <div id="conteudoGrafico" class="aviso-vazio carregando">
-        <p>Carregando dados...</p>
+    <div class="caixa-grafico">
+        <!-- Barras estilo carregamento -->
+        <div class="resumo">
+            <div class="item-barra">
+                <span class="rotulo">Total Vendas</span>
+                <div class="fundo-barra">
+                    <div class="barra vendas" id="barraVendas" style="width: 0%">R$ 0,00</div>
+                </div>
+                <span class="valor-texto" id="txtVendas">R$ 0,00</span>
+            </div>
+
+            <div class="item-barra">
+                <span class="rotulo">Total Despesas</span>
+                <div class="fundo-barra">
+                    <div class="barra despesas" id="barraDespesas" style="width: 0%">R$ 0,00</div>
+                </div>
+                <span class="valor-texto" id="txtDespesas">R$ 0,00</span>
+            </div>
+
+            <div class="item-barra">
+                <span class="rotulo">Saldo Líquido</span>
+                <div class="fundo-barra">
+                    <div class="barra saldo" id="barraSaldo" style="width: 0%">R$ 0,00</div>
+                </div>
+                <span class="valor-texto" id="txtSaldo">R$ 0,00</span>
+            </div>
+        </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://hpahrijwfitnddlhnejz.supabase.co';
-        const SUPABASE_CHAVE = 'sb_publishable_hQL07sR9YzFik7BPVf6ZdA_Krm7Xi8I';
-        const TABELA = 'financo_dados';
-        let supabase = null;
+<script>
+    function pegarTotais() {
+        let v = 0, d = 0;
+        const lancamentos = JSON.parse(localStorage.getItem('lancamentos_financo') || '[]');
+        const contas = JSON.parse(localStorage.getItem('contas_some_ao_pagar') || '[]');
 
-        async function carregarDadosEGrafico() {
-            const conteudo = document.getElementById('conteudoGrafico');
-            let listaSalvos = [];
+        lancamentos.forEach(l => l.tipo === 'venda' ? v += l.valor : d += l.valor);
 
-            try {
-                // Inicializa conexão
-                supabase = supabase.createClient(SUPABASE_URL, SUPABASE_CHAVE);
-
-                // 1. Busca PRIMEIRO da NUVEM
-                const { data, error } = await supabase
-                    .from(TABELA)
-                    .select('*')
-                    .order('id', { ascending: false });
-
-                if (!error && data && data.length > 0) {
-                    listaSalvos = data.map(item => ({
-                        lancamentos: [
-                            ...(item.itens_venda || []).map(v => ({ ...v, tipo: 'venda' })),
-                            ...(item.itens_despesa || []).map(d => ({ ...d, tipo: 'despesa' }))
-                        ]
-                    }));
-                } else {
-                    // 2. Se não tiver na nuvem, verifica o local
-                    const dadosLocal = localStorage.getItem('financoPastaSalvos');
-                    if (dadosLocal) listaSalvos = JSON.parse(dadosLocal);
+        const hoje = new Date(new Date().toDateString());
+        contas.forEach(c => {
+            if (!c.paga) {
+                const venc = new Date(c.vencimento + 'T00:00:00');
+                const diff = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+                if (diff < 0 || diff === 0 || diff === 1) {
+                    d += Number(c.valor) || 0;
                 }
-            } catch (erro) {
-                console.warn('Erro na nuvem, usando local:', erro);
-                const dadosLocal = localStorage.getItem('financoPastaSalvos');
-                if (dadosLocal) listaSalvos = JSON.parse(dadosLocal);
             }
+        });
 
-            if (!listaSalvos || listaSalvos.length === 0) {
-                conteudo.innerHTML = `
-                    <div class="aviso-vazio">
-                        <p>Nenhum lançamento salvo ainda para gerar gráficos!</p>
-                        <p style="margin-top: 0.5rem;">Salve seus lançamentos na página principal para visualizar aqui.</p>
-                    </div>
-                `;
-                return;
-            }
+        return { vendas: v, despesas: d, saldo: v - d };
+    }
 
-            // --- Processa os dados ---
-            const labels = [];
-            const valoresVendas = [];
-            const valoresDespesas = [];
-            const valoresSaldo = [];
-            let totalGeralVendas = 0;
-            let totalGeralDespesas = 0;
+    function atualizarBarras() {
+        const dados = pegarTotais();
+        const maximo = Math.max(dados.vendas, dados.despesas, Math.abs(dados.saldo), 1);
 
-            listaSalvos.forEach((registro, indice) => {
-                labels.push(`Registro ${listaSalvos.length - indice}`);
-                let v = 0, d = 0;
-                if (registro.lancamentos) {
-                    registro.lancamentos.forEach(l => {
-                        if (l.tipo === 'venda') v += parseFloat(l.valor) || 0;
-                        else d += parseFloat(l.valor) || 0;
-                    });
-                }
-                valoresVendas.push(v);
-                valoresDespesas.push(d);
-                valoresSaldo.push(v - d);
-                totalGeralVendas += v;
-                totalGeralDespesas += d;
-            });
+        // Vendas
+        const porcVendas = (dados.vendas / maximo) * 100;
+        document.getElementById('barraVendas').style.width = porcVendas + '%';
+        document.getElementById('txtVendas').textContent = `R$ ${dados.vendas.toFixed(2).replace('.', ',')}`;
 
-            const saldoGeral = totalGeralVendas - totalGeralDespesas;
+        // Despesas
+        const porcDespesas = (dados.despesas / maximo) * 100;
+        document.getElementById('barraDespesas').style.width = porcDespesas + '%';
+        document.getElementById('txtDespesas').textContent = `R$ ${dados.despesas.toFixed(2).replace('.', ',')}`;
 
-            conteudo.innerHTML = `
-                <div class="container-grafico">
-                    <h3 class="titulo-grafico">Comparativo: Vendas x Despesas por Registro</h3>
-                    <div class="grafico-wrapper"><canvas id="graficoBarras"></canvas></div>
-                </div>
+        // Saldo
+        const elBarraSaldo = document.getElementById('barraSaldo');
+        elBarraSaldo.classList.remove('positivo', 'negativo');
+        if (dados.saldo >= 0) elBarraSaldo.classList.add('positivo');
+        else elBarraSaldo.classList.add('negativo');
 
-                <div class="container-grafico">
-                    <h3 class="titulo-grafico">Evolução do Saldo por Registro</h3>
-                    <div class="grafico-wrapper"><canvas id="graficoLinhas"></canvas></div>
-                </div>
+        const porcSaldo = (Math.abs(dados.saldo) / maximo) * 100;
+        elBarraSaldo.style.width = porcSaldo + '%';
+        document.getElementById('txtSaldo').textContent = `R$ ${dados.saldo.toFixed(2).replace('.', ',')}`;
+    }
 
-                <div class="container-grafico">
-                    <h3 class="titulo-grafico">Distribuição Total: Entradas vs Saídas</h3>
-                    <div class="grafico-wrapper"><canvas id="graficoPizza"></canvas></div>
-                </div>
+    window.addEventListener('storage', atualizarBarras);
+    atualizarBarras();
+</script>
 
-                <div class="resumo">
-                    <div class="card vendas">
-                        <div>Total de Vendas</div>
-                        <div class="valor">R$ ${totalGeralVendas.toFixed(2).replace('.', ',')}</div>
-                    </div>
-                    <div class="card despesas">
-                        <div>Total de Despesas</div>
-                        <div class="valor">R$ ${totalGeralDespesas.toFixed(2).replace('.', ',')}</div>
-                    </div>
-                    <div class="card saldo">
-                        <div>Saldo Geral</div>
-                        <div class="valor">R$ ${saldoGeral.toFixed(2).replace('.', ',')}</div>
-                    </div>
-                </div>
-            `;
-
-            // --- Gráficos ---
-            new Chart(document.getElementById('graficoBarras'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Vendas / Entradas', data: valoresVendas, backgroundColor: '#2e7d32', borderRadius: 4 },
-                        { label: 'Despesas / Saídas', data: valoresDespesas, backgroundColor: '#c62828', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } } }
-                }
-            });
-
-            new Chart(document.getElementById('graficoLinhas'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{ label: 'Saldo Líquido', data: valoresSaldo, borderColor: '#1565c0', backgroundColor: 'rgba(21, 101, 192, 0.15)', fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: '#1565c0' }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { ticks: { callback: v => 'R$ ' + v.toFixed(2).replace('.', ',') } } }
-                }
-            });
-
-            new Chart(document.getElementById('graficoPizza'), {
-                type: 'doughnut',
-                data: { labels: ['Vendas', 'Despesas'], datasets: [{ data: [totalGeralVendas, totalGeralDespesas], backgroundColor: ['#2e7d32', '#c62828'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-        }
-
-        function baixarPDF() { window.print(); }
-        window.onload = carregarDadosEGrafico;
-    </script>
 </body>
 </html>
